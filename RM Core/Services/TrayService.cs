@@ -132,27 +132,27 @@ namespace RM_Core.Services
 
         private void ShowMainWindow()
         {
-            _mainWindow.Show();
-
-            // Se a janela foi salva off-screen (monitor desconectado, etc),
-            // traz de volta pro centro do monitor principal.
-            if (!_mainWindow.IsPositionOnScreen(_mainWindow.Left, _mainWindow.Top,
-                                                _mainWindow.Width, _mainWindow.Height))
+            _mainWindow.Dispatcher.BeginInvoke(new Action(() =>
             {
-                var workArea = SystemParameters.WorkArea;
-                _mainWindow.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual;
-                _mainWindow.Left = workArea.Left + (workArea.Width  - _mainWindow.Width)  / 2;
-                _mainWindow.Top  = workArea.Top  + (workArea.Height - _mainWindow.Height) / 2;
-            }
+                _mainWindow.Show();
 
-            if (_mainWindow.WindowState == System.Windows.WindowState.Minimized)
-                _mainWindow.WindowState = System.Windows.WindowState.Normal;
+                if (!_mainWindow.IsPositionOnScreen(_mainWindow.Left, _mainWindow.Top,
+                                                    _mainWindow.Width, _mainWindow.Height))
+                {
+                    var workArea = SystemParameters.WorkArea;
+                    _mainWindow.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual;
+                    _mainWindow.Left = workArea.Left + (workArea.Width  - _mainWindow.Width)  / 2;
+                    _mainWindow.Top  = workArea.Top  + (workArea.Height - _mainWindow.Height) / 2;
+                }
 
-            // Garante que vai pra frente mesmo se outra janela tiver foco
-            _mainWindow.Topmost = true;
-            _mainWindow.Activate();
-            _mainWindow.Topmost = false;
-            _mainWindow.Focus();
+                if (_mainWindow.WindowState == System.Windows.WindowState.Minimized)
+                    _mainWindow.WindowState = System.Windows.WindowState.Normal;
+
+                _mainWindow.Topmost = true;
+                _mainWindow.Activate();
+                _mainWindow.Topmost = false;
+                _mainWindow.Focus();
+            }));
         }
 
         private void OnKillAllProcesses(object? sender, EventArgs e)
