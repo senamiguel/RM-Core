@@ -3009,6 +3009,90 @@ namespace RM_Core
             }
         }
 
+        // ---------------------------------------------------------------
+        // Import / Export
+        // ---------------------------------------------------------------
+
+        private class ExportData
+        {
+            public List<ProfileSettings> Profiles { get; set; } = new();
+            public List<AliasConfig> Aliases { get; set; } = new();
+        }
+
+        private void btnExportar_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new Microsoft.Win32.SaveFileDialog
+                {
+                    Title = "Exportar Configurações",
+                    Filter = "JSON|*.json",
+                    FileName = "rmcore_config.json"
+                };
+                if (dlg.ShowDialog(this) != true) return;
+
+                var data = new ExportData
+                {
+                    Profiles = profiles.Values.ToList(),
+                    Aliases = aliases.ToList()
+                };
+                var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(dlg.FileName, json);
+                AddLog("info", $"Configurações exportadas: {dlg.FileName}");
+                MessageBox.Show("Configurações exportadas com sucesso!", "Exportar", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                AddLog("error", $"Erro ao exportar: {ex.Message}");
+            }
+        }
+
+        private void btnImportar_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = "Importar Configurações",
+                    Filter = "JSON|*.json",
+                    FileName = "rmcore_config.json"
+                };
+                if (dlg.ShowDialog(this) != true) return;
+
+                var json = File.ReadAllText(dlg.FileName);
+                var data = JsonSerializer.Deserialize<ExportData>(json);
+                if (data == null) throw new Exception("Arquivo inválido.");
+
+                var result = MessageBox.Show(
+                    $"Importar {data.Profiles.Count} cliente(s) e {data.Aliases.Count} base(s)?\nOs dados atuais serão substituídos.",
+                    "Confirmar Importação", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result != MessageBoxResult.Yes) return;
+
+                // Substitui dados
+                profiles.Clear();
+                foreach (var p in data.Profiles) profiles[p.Name] = p;
+
+                aliases.Clear();
+                foreach (var a in data.Aliases) aliases.Add(a);
+
+                SaveProfiles();
+                SaveAliases();
+                UpdateProfilesUI();
+                UpdateFilteredAliasesList();
+
+                if (profiles.Count > 0)
+                    LoadProfileToUI(profiles.Values.First());
+
+                AddLog("info", $"Configurações importadas de: {dlg.FileName}");
+                MessageBox.Show("Configurações importadas com sucesso!", "Importar", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                AddLog("error", $"Erro ao importar: {ex.Message}");
+                MessageBox.Show($"Erro ao importar: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private async Task CheckForUpdatesAsync()
         {
             try

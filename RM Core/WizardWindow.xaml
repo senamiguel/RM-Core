@@ -232,7 +232,7 @@
             </Border>
 
             <TextBlock Text="NOME DA BASE" FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,6"/>
-            <TextBox x:Name="txtBaseName" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" Text="CorporeRM" Margin="0,0,0,12"/>
+            <TextBox x:Name="txtBaseName" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" Text="" Margin="0,0,0,12"/>
 
             <TextBlock Text="SERVIDOR (HOST:PORTA)" FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,6"/>
             <TextBox x:Name="txtBaseServer" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" Margin="0,0,0,12"/>

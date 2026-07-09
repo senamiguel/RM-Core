@@ -14,7 +14,7 @@ namespace RM_Core
         public string SelectedInstallPath { get; private set; } = string.Empty;
         public string ClientName { get; private set; } = string.Empty;
         public string ClientVersion { get; private set; } = "12.1.2602";
-        public string BaseName { get; private set; } = "CorporeRM";
+        public string BaseName { get; private set; } = "";
         public string BaseServer { get; private set; } = string.Empty;
         public string BaseDbUser { get; private set; } = string.Empty;
         public string BaseDbPass { get; private set; } = string.Empty;

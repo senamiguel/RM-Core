@@ -4,7 +4,6 @@ using System.Drawing;
 using System.Windows;
 using System.Windows.Forms;
 using Application = System.Windows.Application;
-using Microsoft.Toolkit.Uwp.Notifications;
 
 namespace RM_Core.Services
 {
@@ -54,19 +53,19 @@ namespace RM_Core.Services
                 tipIcon: ToolTipIcon.None);
         }
 
-        /// <summary>Shows a toast notification (fallback to balloon if toast unavailable).</summary>
+        /// <summary>Shows a custom toast popup with the app icon.</summary>
         public void ShowToast(string title, string text)
         {
             try
             {
-                new ToastContentBuilder()
-                    .AddText(title)
-                    .AddText(text)
-                    .Show();
+                _mainWindow.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    var toast = new ToastPopup(title, text);
+                    toast.Show();
+                }));
             }
             catch
             {
-                // Fallback: sem atalho no Menu Iniciar → usa balloon
                 _notifyIcon.ShowBalloonTip(4000, title, text, ToolTipIcon.None);
             }
         }
