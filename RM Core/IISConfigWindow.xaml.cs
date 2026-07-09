@@ -43,51 +43,43 @@ namespace RM_Core
                     return;
                 }
 
-                var psi = new ProcessStartInfo
+                // 1) Pega todos os apps: APP.NAME, SITE.NAME, path
+                var appsXml = RunAppCmd(appCmdPath, "list apps /xml");
+                var appsDoc = XDocument.Parse(appsXml);
+
+                // 2) Pega todos os vdirs: APP.NAME, physicalPath
+                var vdirsXml = RunAppCmd(appCmdPath, "list vdirs /xml");
+                var vdirsDoc = XDocument.Parse(vdirsXml);
+
+                // Mapa APP.NAME -> physicalPath
+                var physPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var vdir in vdirsDoc.Descendants().Where(e => e.Name.LocalName.Equals("VDIR", StringComparison.OrdinalIgnoreCase)))
                 {
-                    FileName = appCmdPath,
-                    Arguments = "list sites /xml",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                };
+                    string appName = GetAttr(vdir, "APP.NAME");
+                    string phys    = GetAttr(vdir, "physicalPath");
+                    if (!string.IsNullOrEmpty(appName) && phys != null)
+                        physPaths[appName] = phys;
+                }
 
-                using var proc = Process.Start(psi);
-                if (proc == null) return;
-
-                string xmlOutput = proc.StandardOutput.ReadToEnd();
-                proc.WaitForExit();
-
-                if (string.IsNullOrEmpty(xmlOutput)) return;
-
-                var doc = XDocument.Parse(xmlOutput);
-                foreach (var siteEl in doc.Descendants("site"))
+                // Itera apps e junta com physicalPath do vdir correspondente
+                foreach (var appEl in appsDoc.Descendants().Where(e => e.Name.LocalName.Equals("APP", StringComparison.OrdinalIgnoreCase)))
                 {
-                    string siteName = siteEl.Attribute("name")?.Value ?? "(sem nome)";
-                    string siteId = siteEl.Attribute("id")?.Value ?? "0";
+                    string appName  = GetAttr(appEl, "APP.NAME");
+                    string siteName = GetAttr(appEl, "SITE.NAME");
+                    string appPath  = GetAttr(appEl, "path") ?? "/";
 
-                    // Cada application dentro do site vira um item separado
-                    foreach (var appEl in siteEl.Descendants("application"))
+                    string phys = physPaths.TryGetValue(appName ?? "", out var p) ? p : "";
+                    string expanded = Environment.ExpandEnvironmentVariables(phys);
+
+                    string displayName = appPath == "/" ? siteName : $"{siteName}{appPath}";
+
+                    _sites.Add(new SiteInfo
                     {
-                        string appPath = appEl.Attribute("path")?.Value ?? "/";
-                        var vDirEl = appEl.Descendants("virtualDirectory").FirstOrDefault();
-                        string physPath = vDirEl?.Attribute("physicalPath")?.Value ?? "";
-
-                        var appDisplayName = appPath == "/"
-                            ? $"{siteName}"
-                            : $"{siteName}{appPath}";
-
-                        var site = new SiteInfo
-                        {
-                            Name = appDisplayName,
-                            Id = siteId,
-                            PhysicalPath = Environment.ExpandEnvironmentVariables(physPath),
-                            AppName = appPath,
-                            WebConfigDir = Environment.ExpandEnvironmentVariables(physPath),
-                        };
-
-                        _sites.Add(site);
-                    }
+                        Name         = displayName ?? "(sem nome)",
+                        AppName      = appName ?? "",
+                        PhysicalPath = expanded,
+                        WebConfigDir = expanded,
+                    });
                 }
 
                 lstSites.Items.Clear();
@@ -97,12 +89,34 @@ namespace RM_Core
                 if (_sites.Count > 0)
                     lstSites.SelectedIndex = 0;
 
-                AddLog($"{_sites.Count} site(s)/app(s) carregado(s).");
+                AddLog($"{_sites.Count} app(s) carregado(s).");
             }
             catch (Exception ex)
             {
                 AddLog($"Erro ao carregar sites: {ex.Message}");
             }
+        }
+
+        private static string RunAppCmd(string appCmdPath, string args)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = appCmdPath,
+                Arguments = args,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            using var proc = Process.Start(psi);
+            if (proc == null) return "";
+            string output = proc.StandardOutput.ReadToEnd();
+            proc.WaitForExit();
+            return output;
+        }
+
+        private static string? GetAttr(XElement el, string name)
+        {
+            return el.Attributes().FirstOrDefault(a => a.Name.LocalName.Equals(name, StringComparison.OrdinalIgnoreCase))?.Value;
         }
 
         private void lstSites_SelectionChanged(object sender, SelectionChangedEventArgs e)
