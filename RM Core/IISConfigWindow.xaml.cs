@@ -22,6 +22,7 @@ namespace RM_Core
         }
 
         private readonly List<SiteInfo> _sites = new();
+        private readonly List<string> _webConfigPaths = new();
         private SiteInfo? _selectedSite;
 
         public IISConfigWindow()
@@ -128,7 +129,60 @@ namespace RM_Core
             txtSiteName.Text = _selectedSite.Name;
             txtPhysicalPath.Text = _selectedSite.PhysicalPath;
 
+            ScanWebConfigs(_selectedSite.PhysicalPath);
+            if (lstWebConfig.Items.Count > 0)
+                lstWebConfig.SelectedIndex = 0;
+            else
+                LoadUrlRewrite();
+        }
+
+        private void lstWebConfig_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
             LoadUrlRewrite();
+        }
+
+        private void ScanWebConfigs(string rootPath)
+        {
+            _webConfigPaths.Clear();
+            lstWebConfig.Items.Clear();
+            if (string.IsNullOrEmpty(rootPath) || !Directory.Exists(rootPath)) return;
+
+            string expanded = Environment.ExpandEnvironmentVariables(rootPath);
+            ScanRecursive(expanded, expanded, 0, 10);
+
+            foreach (var p in _webConfigPaths)
+                lstWebConfig.Items.Add(p);
+        }
+
+        private void ScanRecursive(string root, string dir, int depth, int maxDepth)
+        {
+            if (depth > maxDepth) return;
+            try
+            {
+                string webConfig = Path.Combine(dir, "web.config");
+                if (File.Exists(webConfig))
+                {
+                    string rel = Path.GetRelativePath(root, webConfig).Replace('\\', '/');
+                    _webConfigPaths.Add($"{rel}|{webConfig}");
+                }
+
+                foreach (var sub in Directory.GetDirectories(dir))
+                {
+                    string name = Path.GetFileName(sub).ToLower();
+                    if (name is "bin" or "obj" or ".git" or "node_modules") continue;
+                    ScanRecursive(root, sub, depth + 1, maxDepth);
+                }
+            }
+            catch { }
+        }
+
+        private string? GetSelectedWebConfigPath()
+        {
+            if (lstWebConfig.SelectedItem == null) return null;
+            string sel = lstWebConfig.SelectedItem.ToString() ?? "";
+            int sep = sel.IndexOf('|');
+            if (sep < 0 || sep >= sel.Length - 1) return null;
+            return sel.Substring(sep + 1);
         }
 
         private void LoadUrlRewrite()
@@ -136,16 +190,12 @@ namespace RM_Core
             txtUrlRewrite.Text = string.Empty;
             if (_selectedSite == null) return;
 
+            string? webConfigPath = GetSelectedWebConfigPath();
+            if (string.IsNullOrEmpty(webConfigPath)) return;
+            if (!File.Exists(webConfigPath)) return;
+
             try
             {
-                string dir = _selectedSite.WebConfigDir;
-                if (string.IsNullOrEmpty(dir)) return;
-
-                string expanded = Environment.ExpandEnvironmentVariables(dir);
-                string webConfigPath = Path.Combine(expanded, "web.config");
-
-                if (!File.Exists(webConfigPath)) return;
-
                 var doc = XDocument.Load(webConfigPath);
                 var rewrite = doc.Descendants("rewrite").FirstOrDefault();
                 if (rewrite != null)
@@ -230,14 +280,15 @@ namespace RM_Core
         {
             if (_selectedSite == null) return;
 
+            string? webConfigPath = GetSelectedWebConfigPath();
+            if (string.IsNullOrEmpty(webConfigPath))
+            {
+                MessageBox.Show("Selecione um web.config na lista", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             try
             {
-                string dir = _selectedSite.WebConfigDir;
-                if (string.IsNullOrEmpty(dir)) return;
-
-                string expanded = Environment.ExpandEnvironmentVariables(dir);
-                string webConfigPath = Path.Combine(expanded, "web.config");
-
                 if (!File.Exists(webConfigPath))
                 {
                     MessageBox.Show("web.config não encontrado neste caminho.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);

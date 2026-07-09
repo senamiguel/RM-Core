@@ -426,7 +426,7 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                       </Grid.ColumnDefinitions>
-                      <Ellipse Width="10" Height="10" Fill="Transparent" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                      <Ellipse Width="10" Height="10" Fill="{Binding TagColor, Converter={StaticResource TagColorConverter}}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                       <TextBlock Grid.Column="1" Text="{Binding name}" VerticalAlignment="Center"/>
                     </Grid>
                   </DataTemplate>
@@ -495,7 +495,7 @@
                       <ColumnDefinition Width="*" />
                       <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Grid.ColumnSpan="2" Margin="0,0,20,0"><Run Language="pt-br" Text="Apagar Broker.dat"/></TextBlock>
+                    <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Grid.ColumnSpan="2" Margin="0,0,20,0"><Run Language="pt-br" Text="Deletar Broker"/></TextBlock>
                     <ui:ToggleSwitch x:Name="tsDeletarBrokerDat" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" Margin="10,0,0,0" Toggled="ts_Toggled" Width="52" IsOn="True"/>
                   </Grid>
                 </Grid>

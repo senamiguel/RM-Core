@@ -12,6 +12,8 @@
         <ui:XamlControlsResources/>
 
       </ResourceDictionary.MergedDictionaries>
+
+      <local:TagColorToBrushConverter x:Key="TagColorConverter"/>
     </ResourceDictionary>
   </Application.Resources>
 </Application>
