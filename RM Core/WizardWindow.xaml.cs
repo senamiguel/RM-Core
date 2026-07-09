@@ -112,16 +112,25 @@ namespace RM_Core
                 txtPrivacyWarning.Visibility = Visibility.Collapsed;
         }
 
+        private void btnReadFullPolicy_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new PrivacyPolicyWindow { Owner = this };
+            dlg.ShowDialog();
+        }
+
         private void btnSkip_Click(object sender, RoutedEventArgs e)
         {
             var r = MessageBox.Show(
-                "Tem certeza que quer pular? O wizard vai aparecer de novo no próximo login até ser concluído.",
+                "Tem certeza que quer pular?\n\n" +
+                "O wizard vai aparecer de novo no próximo login até ser concluído.\n\n" +
+                "Lembre-se: a política de privacidade é obrigatória — você só conseguirá usar o RM Core depois de aceitá-la na página 6.",
                 "Pular configuração",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
             if (r == MessageBoxResult.Yes)
             {
                 WizardCompleted = false;
+                PrivacyAccepted = false;
                 DialogResult = false;
                 Close();
             }

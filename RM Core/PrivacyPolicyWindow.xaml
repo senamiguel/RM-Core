@@ -1,0 +1,89 @@
+<Window x:Class="RM_Core.PrivacyPolicyWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        Title="Política de Privacidade — RM Core"
+        Height="620" Width="640"
+        Background="#1C1C1E"
+        Foreground="#E6FFFFFF"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        ShowInTaskbar="False">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <Border Grid.Row="0" Background="#141416" BorderBrush="#1AFFFFFF" BorderThickness="0,0,0,1" Padding="20,16,20,16">
+      <StackPanel>
+        <TextBlock Text="Política de Privacidade" FontSize="18" FontWeight="Bold" Foreground="#E6FFFFFF"/>
+        <TextBlock Text="Coleta de telemetria anônima — RM Core" FontSize="11" Foreground="#80FFFFFF" Margin="0,4,0,0"/>
+      </StackPanel>
+    </Border>
+
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="24,16,24,16">
+      <StackPanel>
+        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#E6FFFFFF" LineHeight="20">
+          <Run FontWeight="SemiBold" Text="1. Identificação do controlador"/>
+          <LineBreak/><Run Text="O RM Core é um aplicativo open-source desenvolvido por Miguel Sena. Dúvidas sobre privacidade podem ser enviadas pelo repositório público github.com/senamiguel/RM-Core."/>
+
+          <LineBreak/><LineBreak/>
+          <Run FontWeight="SemiBold" Text="2. Dados coletados (telemetria)"/>
+          <LineBreak/><Run Text="Para fins exclusivos de melhoria do aplicativo, o RM Core coleta eventos de uso anônimos, especificamente:"/>
+          <LineBreak/><Run Text="  • Identificador aleatório de instalação (GUID gerado localmente na primeira execução)."/>
+          <LineBreak/><Run Text="  • Nome do evento (ex.: app_start, tab_opened, feature_used)."/>
+          <LineBreak/><Run Text="  • Timestamp (data/hora UTC) do evento."/>
+          <LineBreak/><Run Text="  • Versão do aplicativo e versão do .NET runtime."/>
+          <LineBreak/><Run Text="  • Versão do sistema operacional (Windows)."/>
+          <LineBreak/><Run Text="  • Idioma do sistema operacional (ex.: pt-BR)."/>
+          <LineBreak/><Run Text="  • Contagem agregada de clientes e bases cadastradas (apenas números, sem conteúdo)."/>
+
+          <LineBreak/><LineBreak/>
+          <Run FontWeight="SemiBold" Text="3. Dados NÃO coletados"/>
+          <LineBreak/><Run Text="O RM Core NÃO coleta, transmite ou armazena remotamente, em nenhuma hipótese:"/>
+          <LineBreak/><Run Text="  • Nomes de clientes, bases ou aliases."/>
+          <LineBreak/><Run Text="  • Endereços de servidor, portas, hostnames."/>
+          <LineBreak/><Run Text="  • Usuários, senhas, credenciais de qualquer tipo."/>
+          <LineBreak/><Run Text="  • Caminhos de instalação do RM (que podem conter nome de empresa)."/>
+          <LineBreak/><Run Text="  • Conteúdo de logs do aplicativo."/>
+          <LineBreak/><Run Text="  • Endereço IP, endereço MAC, nome de usuário do Windows."/>
+
+          <LineBreak/><LineBreak/>
+          <Run FontWeight="SemiBold" Text="4. Onde os dados ficam armazenados"/>
+          <LineBreak/><Run Text="Os eventos são gravados localmente em formato JSON Lines no arquivo:"/>
+          <LineBreak/><Run FontFamily="Consolas" Text="  %LocalAppData%\RM_Core\telemetry.log"/>
+          <LineBreak/><Run Text="Esse arquivo permanece na sua máquina e, na versão atual, não é enviado automaticamente para nenhum servidor remoto. O envio remoto (se habilitado em versão futura) seguirá os mesmos princípios de anonimato descritos nesta política."/>
+
+          <LineBreak/><LineBreak/>
+          <Run FontWeight="SemiBold" Text="5. Base legal (LGPD)"/>
+          <LineBreak/><Run Text="O tratamento desses dados se enquadra no art. 7º, inciso I da Lei 13.709/2018 — legítimo interesse do controlador para garantir o bom funcionamento e a melhoria contínua do aplicativo, sempre respeitando os princípios denecessidade, adequação e transparência."/>
+
+          <LineBreak/><LineBreak/>
+          <Run FontWeight="SemiBold" Text="6. Direitos do titular"/>
+          <LineBreak/><Run Text="Conforme os arts. 18 e 19 da LGPD, você tem direito a:"/>
+          <LineBreak/><Run Text="  • Confirmação da existência de tratamento (sim, há telemetria local)."/>
+          <LineBreak/><Run Text="  • Acesso aos dados (você pode abrir o arquivo telemetry.log em qualquer editor de texto)."/>
+          <LineBreak/><Run Text="  • Eliminação: basta desinstalar o aplicativo. O arquivo telemetry.log é removido junto com os demais dados em %LocalAppData%\RM_Core."/>
+
+          <LineBreak/><LineBreak/>
+          <Run FontWeight="SemiBold" Text="7. Retenção"/>
+          <LineBreak/><Run Text="Os eventos ficam no arquivo telemetry.log enquanto o aplicativo existir. Não há envio automático; o arquivo só cresce se o app rodar."/>
+
+          <LineBreak/><LineBreak/>
+          <Run FontWeight="SemiBold" Text="8. Segurança"/>
+          <LineBreak/><Run Text="O arquivo é gravado em pasta local do usuário com permissões restritas. Não contém credenciais nem dados pessoais. O identificador de instalação é um GUID aleatório, não vinculável a uma pessoa."/>
+
+          <LineBreak/><LineBreak/>
+          <Run FontWeight="SemiBold" Text="9. Alterações nesta política"/>
+          <LineBreak/><Run Text="Esta política pode ser atualizada em versões futuras do aplicativo. Mudanças relevantes serão destacadas no changelog e exigirão novo aceite no primeiro run após a atualização."/>
+        </TextBlock>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Row="2" Background="#141416" BorderBrush="#1AFFFFFF" BorderThickness="0,1,0,0" Padding="20,14,20,14">
+      <Button x:Name="btnFechar" Content="Fechar" Click="btnFechar_Click" Style="{StaticResource PrimaryButtonStyle}" Height="36" Width="120" HorizontalAlignment="Right"/>
+    </Border>
+  </Grid>
+</Window>
