@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37203.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RM Core", "RM Core\RM Core.csproj", "{450DAD2C-AC77-44BD-86E8-6C422726D244}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostCheck", "HostCheck\HostCheck.csproj", "{7373E8A1-5B9C-4F10-A24D-9E4B27E8C4A1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{450DAD2C-AC77-44BD-86E8-6C422726D244}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{450DAD2C-AC77-44BD-86E8-6C422726D244}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{450DAD2C-AC77-44BD-86E8-6C422726D244}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{450DAD2C-AC77-44BD-86E8-6C422726D244}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7373E8A1-5B9C-4F10-A24D-9E4B27E8C4A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7373E8A1-5B9C-4F10-A24D-9E4B27E8C4A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7373E8A1-5B9C-4F10-A24D-9E4B27E8C4A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7373E8A1-5B9C-4F10-A24D-9E4B27E8C4A1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9CC8B81E-FCAE-440C-B741-034DAAF1D5AB}
+	EndGlobalSection
+EndGlobal

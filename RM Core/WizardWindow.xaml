@@ -1,0 +1,337 @@
+<Window x:Class="RM_Core.WizardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        ui:WindowHelper.SystemBackdropType="Mica"
+        ui:TitleBar.Height="36"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        mc:Ignorable="d"
+        Title="RM Core — Configuração Inicial"
+        Height="540" Width="560"
+        Background="#1C1C1E"
+        FontFamily="Inter, Segoe UI, Arial"
+        FontSize="13">
+
+  <Window.Resources>
+    <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+      <Setter Property="Background" Value="#0078D4"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6" SnapsToDevicePixels="True">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="14,0,14,0"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Trigger.EnterActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#0086F0" Duration="0:0:0.2"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.EnterActions>
+                <Trigger.ExitActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#0078D4" Duration="0:0:0.2"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.ExitActions>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="border" Property="Background" Value="#005A9E"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="border" Property="Background" Value="#40404040"/>
+                <Setter Property="Foreground" Value="#80FFFFFF"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="CardButtonStyle" TargetType="Button">
+      <Setter Property="Background" Value="#0CFFFFFF"/>
+      <Setter Property="BorderBrush" Value="#1AFFFFFF"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Foreground" Value="#E6FFFFFF"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="14,0,14,0"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Trigger.EnterActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#16FFFFFF" Duration="0:0:0.2"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.EnterActions>
+                <Trigger.ExitActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#0CFFFFFF" Duration="0:0:0.2"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.ExitActions>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="InputBoxStyle" TargetType="Control">
+      <Setter Property="Background" Value="#1FFFFFFF"/>
+      <Setter Property="BorderBrush" Value="#33FFFFFF"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Padding" Value="8,0,8,0"/>
+    </Style>
+
+    <Style x:Key="SegmentRadioButtonStyle" TargetType="RadioButton">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="#80FFFFFF"/>
+      <Setter Property="Padding" Value="16,8"/>
+      <Setter Property="Height" Value="34"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="border" Property="Background" Value="#212124"/>
+                <Setter Property="Foreground" Value="White"/>
+              </Trigger>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="White"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
+
+  <Grid Margin="0">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- Header -->
+    <Border Grid.Row="0" Background="#141416" BorderBrush="#1AFFFFFF" BorderThickness="0,0,0,1" Padding="24,18,24,18">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0">
+          <TextBlock x:Name="txtStepTitle" Text="Bem-vindo" FontSize="18" FontWeight="Bold" Foreground="#E6FFFFFF"/>
+          <TextBlock x:Name="txtStepSubtitle" Text="Vamos configurar o RM Core em alguns passos" FontSize="11" Foreground="#80FFFFFF" Margin="0,4,0,0"/>
+        </StackPanel>
+        <TextBlock x:Name="txtStepCounter" Grid.Column="1" Text="1/6" FontSize="12" FontWeight="SemiBold" Foreground="#4DA6FF" VerticalAlignment="Center"/>
+      </Grid>
+    </Border>
+
+    <!-- Content (páginas) -->
+    <Grid Grid.Row="1" Margin="24,20,24,12">
+
+      <!-- Página 1: Bem-vindo -->
+      <Grid x:Name="pageWelcome" Visibility="Visible">
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="&#xED35;" FontFamily="Segoe MDL2 Assets" FontSize="56" Foreground="#4DA6FF" HorizontalAlignment="Center" Margin="0,0,0,18"/>
+          <TextBlock Text="Bem-vindo ao RM Core" FontSize="20" FontWeight="Bold" Foreground="#E6FFFFFF" HorizontalAlignment="Center" TextAlignment="Center"/>
+          <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#B3FFFFFF" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,12,0,0" MaxWidth="420">
+            <Run Text="Vamos configurar alguns pontos essenciais: pasta de instalação, cliente padrão, base padrão e comportamento. Você pode alterar tudo depois na aba Sobre."/>
+          </TextBlock>
+        </StackPanel>
+      </Grid>
+
+      <!-- Página 2: Local de instalação -->
+      <Grid x:Name="pageInstall" Visibility="Collapsed">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+          <TextBlock Text="Onde está instalado o RM?" FontSize="14" FontWeight="SemiBold" Foreground="#E6FFFFFF"/>
+          <TextBlock Text="Selecione uma das pastas detectadas ou procure outra. Procuramos por C:\RM\Legado\*\Bin e C:\totvs\CorporeRM\RM.Net." TextWrapping="Wrap" FontSize="11" Foreground="#80FFFFFF" Margin="0,4,0,0"/>
+        </StackPanel>
+        <Grid Grid.Row="1">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="0">
+            <ListBox x:Name="lstInstallPaths" Background="Transparent" BorderThickness="0" SelectionChanged="lstInstallPaths_SelectionChanged" DisplayMemberPath="."/>
+          </Border>
+          <Grid Grid.Row="1" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="8"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="txtSelectedPath" Text="Nenhuma pasta selecionada" FontSize="11" Foreground="#80FFFFFF" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+            <Button x:Name="btnBrowseInstall" Grid.Column="2" Content="Procurar..." Style="{StaticResource CardButtonStyle}" Height="32" Click="btnBrowseInstall_Click"/>
+          </Grid>
+        </Grid>
+      </Grid>
+
+      <!-- Página 3: Cliente padrão -->
+      <Grid x:Name="pageClient" Visibility="Collapsed">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+          <TextBlock Text="Cliente padrão" FontSize="14" FontWeight="SemiBold" Foreground="#E6FFFFFF"/>
+          <TextBlock Text="Crie o primeiro cliente. Esse será o cliente ativo sempre que o app abrir." TextWrapping="Wrap" FontSize="11" Foreground="#80FFFFFF" Margin="0,4,0,0"/>
+        </StackPanel>
+        <StackPanel Grid.Row="1">
+          <TextBlock Text="NOME" FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,6"/>
+          <TextBox x:Name="txtClientName" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" Margin="0,0,0,14"/>
+
+          <TextBlock Text="VERSÃO DO RM" FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,6"/>
+          <ComboBox x:Name="cbClientVersion" Height="34" ui:ControlHelper.CornerRadius="6" IsEditable="True" Background="#1FFFFFFF" Foreground="White"/>
+        </StackPanel>
+      </Grid>
+
+      <!-- Página 4: Base padrão -->
+      <Grid x:Name="pageBase" Visibility="Collapsed">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+          <TextBlock Text="Base padrão" FontSize="14" FontWeight="SemiBold" Foreground="#E6FFFFFF"/>
+          <TextBlock x:Name="txtBaseHint" Text="Configure a primeira conexão de banco." TextWrapping="Wrap" FontSize="11" Foreground="#80FFFFFF" Margin="0,4,0,0"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <TextBlock Text="PROVEDOR" FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,6"/>
+            <Border Background="#0A0A0B" CornerRadius="8" Padding="2" HorizontalAlignment="Left" Margin="0,0,0,12">
+              <StackPanel Orientation="Horizontal">
+                <RadioButton x:Name="rbSqlWizard" Content="MS SQL Server" Style="{StaticResource SegmentRadioButtonStyle}" IsChecked="True" GroupName="DbProviderGroup" Checked="rbDbProviderWizard_Checked"/>
+                <RadioButton x:Name="rbOracleWizard" Content="Oracle" Style="{StaticResource SegmentRadioButtonStyle}" GroupName="DbProviderGroup" Checked="rbDbProviderWizard_Checked"/>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Text="NOME DA BASE" FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,6"/>
+            <TextBox x:Name="txtBaseName" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" Text="CorporeRM" Margin="0,0,0,12"/>
+
+            <TextBlock Text="SERVIDOR (HOST:PORTA)" FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,6"/>
+            <TextBox x:Name="txtBaseServer" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" Margin="0,0,0,12"/>
+
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <StackPanel Grid.Column="0">
+                <TextBlock Text="USUÁRIO DO BANCO" FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,6"/>
+                <TextBox x:Name="txtBaseDbUser" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White"/>
+              </StackPanel>
+              <StackPanel Grid.Column="2">
+                <TextBlock Text="SENHA DO BANCO" FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,6"/>
+                <PasswordBox x:Name="pbBaseDbPass" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White"/>
+              </StackPanel>
+            </Grid>
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
+
+      <!-- Página 5: Comportamento -->
+      <Grid x:Name="pageBehavior" Visibility="Collapsed">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+          <TextBlock Text="Comportamento" FontSize="14" FontWeight="SemiBold" Foreground="#E6FFFFFF"/>
+          <TextBlock Text="Escolha como o app deve se comportar." TextWrapping="Wrap" FontSize="11" Foreground="#80FFFFFF" Margin="0,4,0,0"/>
+        </StackPanel>
+        <StackPanel Grid.Row="1">
+          <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,8,15,8">
+            <StackPanel>
+              <Grid Margin="0,8,0,8">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Fechar minimiza pro tray"/>
+                  <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="X esconde; Sair pelo menu encerra" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ui:ToggleSwitch x:Name="tsWizCloseToTray" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="True"/>
+              </Grid>
+              <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0"/>
+              <Grid Margin="0,8,0,8">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Iniciar com o Windows"/>
+                  <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Adiciona atalho no startup" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ui:ToggleSwitch x:Name="tsWizStartWithWindows" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+              </Grid>
+              <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0"/>
+              <Grid Margin="0,8,0,8">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Iniciar minimizado"/>
+                  <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Sobe direto pro tray ao abrir" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ui:ToggleSwitch x:Name="tsWizStartMinimized" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+              </Grid>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Grid>
+
+      <!-- Página 6: Pronto -->
+      <Grid x:Name="pageDone" Visibility="Collapsed">
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="56" Foreground="#4CAF50" HorizontalAlignment="Center" Margin="0,0,0,18"/>
+          <TextBlock Text="Tudo pronto!" FontSize="20" FontWeight="Bold" Foreground="#E6FFFFFF" HorizontalAlignment="Center"/>
+          <TextBlock x:Name="txtSummary" TextWrapping="Wrap" FontSize="12" Foreground="#B3FFFFFF" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,12,0,0" MaxWidth="420"/>
+        </StackPanel>
+      </Grid>
+
+    </Grid>
+
+    <!-- Footer -->
+    <Border Grid.Row="2" Background="#141416" BorderBrush="#1AFFFFFF" BorderThickness="0,1,0,0" Padding="24,14,24,14">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Button x:Name="btnBack" Grid.Column="0" Content="Voltar" Style="{StaticResource CardButtonStyle}" Height="36" Width="100" IsEnabled="False" Click="btnBack_Click"/>
+        <Button x:Name="btnSkip" Grid.Column="1" Content="Pular configuração" Style="{StaticResource CardButtonStyle}" Height="36" Margin="14,0,14,0" HorizontalAlignment="Left" Click="btnSkip_Click" ToolTip="Fecha sem salvar e abre o wizard de novo no próximo login"/>
+        <Button x:Name="btnNext" Grid.Column="2" Content="Avançar" Style="{StaticResource PrimaryButtonStyle}" Height="36" Width="100" Click="btnNext_Click"/>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

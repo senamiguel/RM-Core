@@ -1,0 +1,1282 @@
+<Window x:Class="RM_Core.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:RM_Core"
+        
+        xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
+        xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        
+        ui:WindowHelper.UseModernWindowStyle="True"
+        ui:WindowHelper.SystemBackdropType="Mica"
+        ui:TitleBar.Height="36"
+        ui:TitleBar.IsIconVisible="True"
+        ResizeMode="CanMinimize"
+        WindowStartupLocation="CenterScreen"
+        mc:Ignorable="d"
+        Title="RM Core" Height="710" Width="450" 
+        Icon="pack://application:,,,/RM_CORE.ico"
+        Background="#1C1C1E"
+        FontFamily="Inter, Segoe UI, Arial"
+        FontSize="14">
+
+  <Window.Resources>
+    <Style x:Key="BottomTabStyle" TargetType="RadioButton">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="#80FFFFFF"/>
+      <Setter Property="Height" Value="54"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="TabBorder" Background="Transparent" CornerRadius="10" Padding="6,6,6,6" Margin="4,2,4,2">
+              <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock x:Name="TabIcon" Text="{TemplateBinding Content}" FontFamily="Segoe MDL2 Assets" FontSize="18" HorizontalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
+                <TextBlock x:Name="TabLabel" Text="{TemplateBinding Tag}" FontSize="9" FontWeight="Bold" Margin="0,4,0,0" HorizontalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
+              </StackPanel>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="TabBorder" Property="Background" Value="#1A0078D4"/>
+                <Setter Property="Foreground" Value="#4DA6FF"/>
+              </Trigger>
+              <MultiTrigger>
+                <MultiTrigger.Conditions>
+                  <Condition Property="IsMouseOver" Value="True"/>
+                  <Condition Property="IsChecked" Value="True"/>
+                </MultiTrigger.Conditions>
+                <Setter TargetName="TabBorder" Property="Background" Value="#2B0078D4"/>
+                <Setter Property="Foreground" Value="#80C0FF"/>
+              </MultiTrigger>
+              <MultiTrigger>
+                <MultiTrigger.Conditions>
+                  <Condition Property="IsMouseOver" Value="True"/>
+                  <Condition Property="IsChecked" Value="False"/>
+                </MultiTrigger.Conditions>
+                <Setter TargetName="TabBorder" Property="Background" Value="#0DFFFFFF"/>
+                <Setter Property="Foreground" Value="#E6FFFFFF"/>
+              </MultiTrigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="PremiumCardButtonStyle" TargetType="Button">
+      <Setter Property="Background" Value="#0CFFFFFF"/>
+      <Setter Property="BorderBrush" Value="#1AFFFFFF"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="5"/>
+      <Setter Property="Foreground" Value="#E6FFFFFF"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+      <Setter Property="RenderTransform">
+        <Setter.Value>
+          <TranslateTransform X="0" Y="0"/>
+        </Setter.Value>
+      </Setter>
+      
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="border"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="8"
+                    Padding="{TemplateBinding Padding}"
+                    SnapsToDevicePixels="true">
+              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+            </Border>
+            
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Trigger.EnterActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                      To="#16FFFFFF" Duration="0:0:0.2"/>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                      To="#40FFFFFF" Duration="0:0:0.2"/>
+                      <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                       To="-3" Duration="0:0:0.15" DecelerationRatio="0.8"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.EnterActions>
+                <Trigger.ExitActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                      To="#0CFFFFFF" Duration="0:0:0.2"/>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                      To="#1AFFFFFF" Duration="0:0:0.2"/>
+                      <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                       To="0" Duration="0:0:0.15" AccelerationRatio="0.8"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.ExitActions>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="border" Property="Background" Value="#22FFFFFF"/>
+                <Setter TargetName="border" Property="BorderBrush" Value="#60FFFFFF"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="PremiumRedButtonStyle" TargetType="Button">
+      <Setter Property="Background" Value="#2D2D30"/>
+      <Setter Property="BorderBrush" Value="#3F3F46"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Foreground" Value="#FF4D4D"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+      <Setter Property="RenderTransform">
+        <Setter.Value>
+          <TranslateTransform X="0" Y="0"/>
+        </Setter.Value>
+      </Setter>
+      
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="border"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="6"
+                    SnapsToDevicePixels="true">
+              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+            </Border>
+            
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Trigger.EnterActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                      To="#3D2D30" Duration="0:0:0.2"/>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                      To="#FF4D4D" Duration="0:0:0.2"/>
+                      <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                       To="-3" Duration="0:0:0.15" DecelerationRatio="0.8"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.EnterActions>
+                <Trigger.ExitActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                      To="#2D2D30" Duration="0:0:0.2"/>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                      To="#3F3F46" Duration="0:0:0.2"/>
+                      <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                       To="0" Duration="0:0:0.15" AccelerationRatio="0.8"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.ExitActions>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="border" Property="Background" Value="#4D2D30"/>
+                <Setter TargetName="border" Property="BorderBrush" Value="#FF3333"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="PremiumMainButtonStyle" TargetType="Button">
+      <Setter Property="Background" Value="#0078D4"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="border"
+                    Background="{TemplateBinding Background}"
+                    CornerRadius="6,0,0,6"
+                    SnapsToDevicePixels="true">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Trigger.EnterActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                      To="#0086F0" Duration="0:0:0.2"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.EnterActions>
+                <Trigger.ExitActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                      To="#0078D4" Duration="0:0:0.2"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.ExitActions>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="border" Property="Background" Value="#005A9E"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="PremiumDropdownButtonStyle" TargetType="Button">
+      <Setter Property="Background" Value="#0063B1"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="border"
+                    Background="{TemplateBinding Background}"
+                    CornerRadius="0,6,6,0"
+                    SnapsToDevicePixels="true">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Trigger.EnterActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                      To="#0072C6" Duration="0:0:0.2"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.EnterActions>
+                <Trigger.ExitActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                      To="#0063B1" Duration="0:0:0.2"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.ExitActions>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="border" Property="Background" Value="#004B87"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="LiftGridStyle" TargetType="Grid">
+      <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+      <Setter Property="RenderTransform">
+        <Setter.Value>
+          <TranslateTransform X="0" Y="0"/>
+        </Setter.Value>
+      </Setter>
+      <Style.Triggers>
+        <EventTrigger RoutedEvent="MouseEnter">
+          <BeginStoryboard>
+            <Storyboard>
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                               To="-3" Duration="0:0:0.15" DecelerationRatio="0.8"/>
+            </Storyboard>
+          </BeginStoryboard>
+        </EventTrigger>
+        <EventTrigger RoutedEvent="MouseLeave">
+          <BeginStoryboard>
+            <Storyboard>
+              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                               To="0" Duration="0:0:0.15" AccelerationRatio="0.8"/>
+            </Storyboard>
+          </BeginStoryboard>
+        </EventTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <Style x:Key="SegmentRadioButtonStyle" TargetType="RadioButton">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="#80FFFFFF"/>
+      <Setter Property="Padding" Value="16,8"/>
+      <Setter Property="Height" Value="34"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="border" Property="Background" Value="#212124"/>
+                <Setter Property="Foreground" Value="White"/>
+              </Trigger>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="White"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="PremiumPrimaryButtonStyle" TargetType="Button">
+      <Setter Property="Background" Value="#0078D4"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="border"
+                    Background="{TemplateBinding Background}"
+                    CornerRadius="6"
+                    SnapsToDevicePixels="true">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Trigger.EnterActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                      To="#0086F0" Duration="0:0:0.2"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.EnterActions>
+                <Trigger.ExitActions>
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <ColorAnimation Storyboard.TargetName="border"
+                                      Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                      To="#0078D4" Duration="0:0:0.2"/>
+                    </Storyboard>
+                  </BeginStoryboard>
+                </Trigger.ExitActions>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="border" Property="Background" Value="#005A9E"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
+
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition />
+      <RowDefinition Height="Auto" MinHeight="78.04" />
+    </Grid.RowDefinitions>
+
+    <!-- CONTENT AREA -->
+    <Grid Grid.Row="0">
+
+      <!-- Tab 1: INÍCIO -->
+      <Grid x:Name="gridTabInicio" Visibility="Visible">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 1. SELECTORS (FIXED HEADER) -->
+        <Grid Grid.Row="0" Margin="18,15,18,15">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="191*" />
+            <ColumnDefinition Width="9*"/>
+            <ColumnDefinition Width="14" />
+            <ColumnDefinition Width="200*" />
+          </Grid.ColumnDefinitions>
+
+          <StackPanel Grid.Column="0" Grid.ColumnSpan="2">
+            <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF"><Run Language="pt-br" Text="CLIENTE ATIVO"/></TextBlock>
+            <ComboBox x:Name="cbClienteAtivo" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" SelectionChanged="cbClienteAtivo_SelectionChanged"/>
+          </StackPanel>
+
+          <StackPanel Grid.Column="3">
+            <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF"><Run Text="BASE"/></TextBlock>
+            <ComboBox x:Name="cbBase" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" SelectionChanged="cbBase_SelectionChanged"/>
+          </StackPanel>
+        </Grid>
+
+        <!-- SCROLLABLE CONTENT -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+          <ikw:SimpleStackPanel Spacing="20" VerticalAlignment="Top" Margin="18,0,18,15">
+
+            <!-- 2. QUICK SETTINGS -->
+            <StackPanel>
+              <TextBlock Text="QUICK SETTINGS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,8"/>
+              <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+
+                  <!-- Limpar Brokers -->
+                  <Grid Grid.Column="0">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Grid.ColumnSpan="2" Margin="0,0,59,0"><Run Language="pt-br" Text="Limpar Broker Custom"/></TextBlock>
+                    <ui:ToggleSwitch x:Name="tsLimparBrokers" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" Margin="10,0,0,0" Toggled="ts_Toggled" Width="52" IsOn="True"/>
+                  </Grid>
+
+                  <!-- Logs Detalhados -->
+                  <Grid Grid.Column="2">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                      <TextBlock Text="Logs Detalhados" VerticalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF"/>
+                      <Border Background="#0078D4" CornerRadius="3" Padding="4,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="DBG" FontSize="8" FontWeight="Bold" Foreground="White" />
+                      </Border>
+                    </StackPanel>
+
+                    <ui:ToggleSwitch x:Name="tsLogsDetalhados" Grid.Column="2" IsOn="False" OffContent="" OnContent="" MinWidth="0" Margin="10,0,0,0" VerticalAlignment="Center" Toggled="ts_Toggled"/>
+                  </Grid>
+                </Grid>
+              </Border>
+            </StackPanel>
+
+            <!-- 3. MASTER ACTIONS -->
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+
+              <!-- Iniciar Ambiente Completo (Split-Button Grid) -->
+              <Grid Grid.Column="0" Grid.ColumnSpan="5" Style="{StaticResource LiftGridStyle}">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Main Button -->
+                <Button x:Name="btnIniciarCompleto" Grid.Column="0" 
+                        Style="{StaticResource PremiumMainButtonStyle}"
+                        Height="42" FontSize="13" FontWeight="SemiBold"
+                        HorizontalAlignment="Stretch" Click="btnIniciarCompleto_Click">
+                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock VerticalAlignment="Center" Text="Iniciar RM + Host"/>
+                  </StackPanel>
+                </Button>
+
+                <!-- Dropdown Arrow Button -->
+                <Button x:Name="btnIniciarDropdown" Grid.Column="1" Width="32"
+                        Style="{StaticResource PremiumDropdownButtonStyle}"
+                        Height="42" Click="btnIniciarDropdown_Click" HorizontalAlignment="Center" VerticalAlignment="Bottom">
+                  <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  <Button.ContextMenu>
+                    <ContextMenu x:Name="menuIniciarSeparado">
+                      <MenuItem Header="Iniciar Somente RM" Click="menuIniciarRM_Click"/>
+                      <MenuItem Header="Iniciar Somente Host Principal" Click="menuIniciarHostPrincipal_Click"/>
+                      <MenuItem Header="Iniciar Somente Host 2" Click="menuIniciarHost2_Click"/>
+                      <MenuItem Header="Abrir Somente Portal do Aluno" Click="menuIniciarPortalAluno_Click"/>
+                    </ContextMenu>
+                  </Button.ContextMenu>
+                </Button>
+              </Grid>
+
+              <!-- Derrubar -->
+              <Button x:Name="btnDerrubarTudo" Grid.Column="6" HorizontalAlignment="Stretch"
+                      Style="{StaticResource PremiumRedButtonStyle}" Click="btnDerrubarTudo_Click"
+                      ToolTip="Derrubar todos os processos">
+                <TextBlock Text="&#xE10A;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Button>
+            </Grid>
+
+            <!-- 4. ATALHOS -->
+            <StackPanel>
+              <TextBlock Text="ATALHOS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,10"/>
+
+              <Grid>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="8" />
+                  <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="8" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="8" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="8" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Primeira linha: 4 cartões individuais -->
+
+                <!-- Pasta Custom Card -->
+                <Button x:Name="btnCustom" Grid.Row="0" Grid.Column="0" Height="80"
+                        Style="{StaticResource PremiumCardButtonStyle}"
+                        Click="btnCustom_Click" HorizontalAlignment="Stretch">
+                  <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" Margin="0,0,0,6" Foreground="#E6FFFFFF"/>
+                    <TextBlock FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="#E6FFFFFF"><Run Language="pt-br" Text="Pasta Custom"/></TextBlock>
+                  </StackPanel>
+                </Button>
+
+                <!-- Bases Card -->
+                <Button x:Name="btnAliases" Grid.Row="0" Grid.Column="2" Height="80"
+                        Style="{StaticResource PremiumCardButtonStyle}"
+                        Click="btnAliases_Click" HorizontalAlignment="Stretch">
+                  <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="&#xEC27;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" Margin="0,0,0,6" Foreground="#E6FFFFFF"/>
+                    <TextBlock Text="Bases" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="#E6FFFFFF"/>
+                  </StackPanel>
+                </Button>
+
+                <!-- BIN Card -->
+                <Button x:Name="btnBin" Grid.Row="0" Grid.Column="4" Height="80"
+                        Style="{StaticResource PremiumCardButtonStyle}"
+                        Click="btnBin_Click" HorizontalAlignment="Stretch">
+                  <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="&#xE838;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" Margin="0,0,0,6" Foreground="#E6FFFFFF"/>
+                    <TextBlock Text="Pasta BIN" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="#E6FFFFFF"/>
+                  </StackPanel>
+                </Button>
+
+                <!-- DEL. DLL Card -->
+                <Button x:Name="btnDelDll" Grid.Row="0" Grid.Column="6" Height="80"
+                        Style="{StaticResource PremiumCardButtonStyle}"
+                        Click="btnDelDll_Click" HorizontalAlignment="Stretch">
+                  <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="&#xE108;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" Margin="0,0,0,6" Foreground="#E6FFFFFF"/>
+                    <TextBlock Text="DEL. DLL" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="#E6FFFFFF"/>
+                  </StackPanel>
+                </Button>
+
+                <!-- Segunda linha: 2 botões compridos (Instalar Dual Host + Validar DLLs) -->
+
+                <!-- Instalar Dual Host Card -->
+                <Button x:Name="btnInstalarDualHost" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Height="80"
+                        Style="{StaticResource PremiumCardButtonStyle}"
+                        Click="btnInstalarDualHost_Click" HorizontalAlignment="Stretch">
+                  <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="&#xE9F5;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" Margin="0,0,0,6" Foreground="#E6FFFFFF"/>
+                    <TextBlock Text="Instalar Dual Host" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="#E6FFFFFF"/>
+                  </StackPanel>
+                </Button>
+
+                <!-- Validar DLLs Card -->
+                <Button x:Name="btnValidarDLLs" Grid.Row="2" Grid.Column="4" Grid.ColumnSpan="3" Height="80"
+                        Style="{StaticResource PremiumCardButtonStyle}"
+                        Click="btnValidarDLLs_Click" HorizontalAlignment="Stretch">
+                  <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" Margin="0,0,0,6" Foreground="#E6FFFFFF"/>
+                    <TextBlock Text="Validar DLLs" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="#E6FFFFFF"/>
+                  </StackPanel>
+                </Button>
+              </Grid>
+            </StackPanel>
+
+          <!-- 5. WEB & FERRAMENTAS -->
+          <StackPanel>
+            <TextBlock Text="WEB &amp; FERRAMENTAS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,10"/>
+
+            <!-- Portal do Aluno -->
+
+            <!-- Host 2 -->
+
+            <!-- Ações Rápidas -->
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="12" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
+
+              <!-- Reiniciar IIS -->
+              <Button x:Name="btnReiniciarIIS" Grid.Row="0" Grid.Column="0" Height="82" HorizontalContentAlignment="Left"
+                      Style="{StaticResource PremiumCardButtonStyle}" Click="btnReiniciarIIS_Click" HorizontalAlignment="Stretch">
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#E6FFFFFF" Margin="0,0,0,6"/>
+                  <TextBlock Text="Reiniciar IIS" FontSize="12" FontWeight="Bold" Foreground="#E6FFFFFF"/>
+                  <TextBlock Text="REINICIA O SERVIDOR WEB" FontSize="8" Foreground="#80FFFFFF" Margin="0,2,0,0"/>
+                </StackPanel>
+              </Button>
+
+              <!-- Config. IIS -->
+              <Button x:Name="btnConfigIIS" Grid.Row="0" Grid.Column="2" Height="82" HorizontalContentAlignment="Left"
+                      Style="{StaticResource PremiumCardButtonStyle}" Click="btnConfigIIS_Click" HorizontalAlignment="Stretch">
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#E6FFFFFF" Margin="0,0,0,6"/>
+                  <TextBlock Text="Config. IIS" FontSize="12" FontWeight="Bold" Foreground="#E6FFFFFF"/>
+                  <TextBlock Text="ABRIR GERENCIADOR" FontSize="8" Foreground="#80FFFFFF" Margin="0,2,0,0"/>
+                </StackPanel>
+              </Button>
+
+              <!-- Reciclar AppPool -->
+              <Button x:Name="btnReciclarAppPool" Grid.Row="2" Grid.Column="0" Height="82" HorizontalContentAlignment="Left"
+                      Style="{StaticResource PremiumCardButtonStyle}" Click="btnReciclarAppPool_Click" HorizontalAlignment="Stretch">
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#E6FFFFFF" Margin="0,0,0,6"/>
+                  <TextBlock Text="Reciclar AppPool" FontSize="12" FontWeight="Bold" Foreground="#E6FFFFFF"/>
+                  <TextBlock Text="ATUALIZA O WORKER" FontSize="8" Foreground="#80FFFFFF" Margin="0,2,0,0"/>
+                </StackPanel>
+              </Button>
+
+              <!-- Limpar Temp -->
+              <Button x:Name="btnLimparTemp" Grid.Row="2" Grid.Column="2" Height="82" HorizontalContentAlignment="Left"
+                      Style="{StaticResource PremiumCardButtonStyle}" Click="btnLimparTemp_Click" HorizontalAlignment="Stretch">
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="&#xE7F5;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#E6FFFFFF" Margin="0,0,0,6"/>
+                  <TextBlock Text="Limpar Temp" FontSize="12" FontWeight="Bold" Foreground="#E6FFFFFF"/>
+                  <TextBlock Text="LIMPA O CACHE" FontSize="8" Foreground="#80FFFFFF" Margin="0,2,0,0"/>
+                </StackPanel>
+              </Button>
+            </Grid>
+          </StackPanel>
+
+          <!-- 6. STATUS DOS SERVIÇOS -->
+          <StackPanel>
+            <Grid Margin="0,0,0,8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="STATUS DOS SERVIÇOS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" VerticalAlignment="Center"/>
+              <Button x:Name="btnAtualizarServicos" Grid.Column="1" Width="90" Height="26"
+                      Style="{StaticResource PremiumCardButtonStyle}"
+                      Click="btnAtualizarServicos_Click">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                  <TextBlock Text="Atualizar" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+            </Grid>
+            <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="12,10,12,10">
+              <StackPanel>
+                <ListBox x:Name="lstServicos"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         MaxHeight="140"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         Foreground="#E6FFFFFF"
+                         FontFamily="Consolas, monospace"
+                         FontSize="12"
+                         IsHitTestVisible="False"/>
+                <TextBlock x:Name="txtSemServicos" Text="Nenhum processo RM em execução."
+                           FontSize="12" FontStyle="Italic" Foreground="#80FFFFFF"
+                           Margin="0,4,0,0"
+                           Visibility="Collapsed"/>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+
+        </ikw:SimpleStackPanel>
+      </ScrollViewer>
+    </Grid>
+
+      <!-- Tab 2: LOGS -->
+      <Grid x:Name="gridTabLogs" Visibility="Collapsed" Margin="18,15,18,15">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,15">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          
+          <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock Text="&#xE756;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#4DA6FF" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBlock Text="LOGS" FontSize="16" FontWeight="Bold" Foreground="#E6FFFFFF" VerticalAlignment="Center"/>
+          </StackPanel>
+
+          <StackPanel Grid.Column="1" Orientation="Horizontal">
+            <Button x:Name="btnCopiarLogs" Width="36" Height="36"
+                    Style="{StaticResource PremiumCardButtonStyle}"
+                    ToolTip="Copiar Logs" Click="btnCopiarLogs_Click" Margin="0,0,8,0">
+              <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Button>
+            <Button x:Name="btnLimparLogs" Width="36" Height="36"
+                    Style="{StaticResource PremiumCardButtonStyle}"
+                    ToolTip="Limpar Logs" Click="btnLimparLogs_Click">
+              <TextBlock Text="&#xE894;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Button>
+          </StackPanel>
+        </Grid>
+
+        <!-- Logs Container -->
+        <Border Grid.Row="1" Background="#000000" BorderBrush="#333333" BorderThickness="1" CornerRadius="12" Padding="15">
+          <Grid>
+            <!-- Empty state -->
+            <TextBlock x:Name="txtNenhumLog" Text="Nenhum log disponível." FontStyle="Italic" Foreground="#666666" 
+                       VerticalAlignment="Top" HorizontalAlignment="Left" Visibility="Visible" FontSize="13"/>
+            
+            <!-- Logs List -->
+            <ScrollViewer x:Name="scrollLogs" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed">
+              <ItemsControl x:Name="listLogs">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <DockPanel LastChildFill="True" Margin="0,0,0,8">
+                      <Border DockPanel.Dock="Bottom" BorderBrush="#222222" BorderThickness="0,0,0,1" Margin="0,4,0,0" SnapsToDevicePixels="True"/>
+                      <TextBlock Text="{Binding TimeFormatted}" Foreground="#888888" FontFamily="Consolas, monospace" FontSize="13" DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Top"/>
+                      <TextBlock Text="{Binding Message}" Foreground="{Binding ColorBrush}" FontFamily="Consolas, monospace" FontSize="13" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                    </DockPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Grid>
+        </Border>
+      </Grid>
+
+      <!-- Tab 3: CLIENTES -->
+      <Grid x:Name="gridTabPerfil" Visibility="Collapsed">
+        <!-- Sub-tela 1: Configurações do Cliente -->
+        <Grid x:Name="gridClientSettingsForm" Visibility="Visible">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+
+          <!-- FIXED HEADER SECTION -->
+          <ikw:SimpleStackPanel Grid.Row="0" Spacing="18" Margin="18,15,18,15">
+            <!-- Header -->
+            <Grid Margin="0,0,0,5">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#4DA6FF" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Text="CONFIGURAÇÕES DE CLIENTE" FontSize="16" FontWeight="Bold" Foreground="#E6FFFFFF" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Grid>
+
+            <!-- 1. PROFILE SELECTOR & ACTIONS -->
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+
+              <!-- Profile ComboBox -->
+              <StackPanel Grid.Column="0">
+                <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="CLIENTE ATIVO"/>
+                <ComboBox x:Name="cbPerfis" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" SelectionChanged="cbPerfis_SelectionChanged"/>
+              </StackPanel>
+
+              <!-- Save Profile Button -->
+              <Button x:Name="btnSalvarPerfil" Grid.Column="2" Width="36" Height="36" Margin="0,17,0,0"
+                      Style="{StaticResource PremiumCardButtonStyle}"
+                      ToolTip="Salvar Cliente" Click="btnSalvarPerfil_Click">
+                <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Button>
+
+              <!-- Delete Profile Button -->
+              <Button x:Name="btnDeletarPerfil" Grid.Column="4" Width="36" Height="36" Margin="0,17,0,0"
+                      Style="{StaticResource PremiumRedButtonStyle}"
+                      ToolTip="Excluir Cliente" Click="btnDeletarPerfil_Click">
+                <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Button>
+
+              <!-- Importar Ambientes Button -->
+              <Button x:Name="btnImportarAmbientes" Grid.Column="6" Width="36" Height="36" Margin="0,17,0,0"
+                      Style="{StaticResource PremiumCardButtonStyle}"
+                      ToolTip="Importar Ambientes" Click="btnImportarAmbientes_Click">
+                <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Button>
+            </Grid>
+          </ikw:SimpleStackPanel>
+
+          <!-- SCROLLABLE CONTENT -->
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ikw:SimpleStackPanel Spacing="18" VerticalAlignment="Top" Margin="18,0,18,15">
+
+              <!-- 2. PROFILE FIELDS -->
+              <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12">
+                <ikw:SimpleStackPanel Spacing="12">
+                  <!-- Nome do Perfil -->
+                  <StackPanel>
+                    <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="NOME DO CLIENTE"/>
+                    <TextBox x:Name="txtNomePerfil" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" Padding="6,0,6,0" VerticalContentAlignment="Center" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" CaretBrush="White"/>
+                  </StackPanel>
+
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="12" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Versão RM -->
+                    <StackPanel Grid.Column="0">
+                      <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="VERSÃO RM"/>
+                      <ComboBox x:Name="cbVersaoRM" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" SelectionChanged="cbVersaoRM_SelectionChanged"/>
+                    </StackPanel>
+
+                    <!-- Alias com Botão de Cadastro -->
+                    <StackPanel Grid.Column="2">
+                      <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="BASES"/>
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="8" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox x:Name="cbAliasDB" Grid.Column="0" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" SelectionChanged="cbAliasDB_SelectionChanged"/>
+                        <Button x:Name="btnGerenciarAliases" Grid.Column="2" Width="34" Height="34" Style="{StaticResource PremiumCardButtonStyle}" ToolTip="Gerenciar Bases" Click="btnGerenciarAliases_Click">
+                          <TextBlock Text="&#xE109;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
+                      </Grid>
+                    </StackPanel>
+                  </Grid>
+                </ikw:SimpleStackPanel>
+              </Border>
+
+              <!-- 3. DETAILED SETTINGS SWITCHES -->
+              <StackPanel>
+                <TextBlock Text="COMPORTAMENTOS DO CLIENTE" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,8"/>
+                <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12">
+                  <StackPanel>
+                    <!-- Auto Login -->
+                    <Grid Margin="0,0,0,12">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Auto Login"/>
+                        <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Ignorar tela de login" Margin="0,2,0,0"/>
+                      </StackPanel>
+                      <ui:ToggleSwitch x:Name="tsAutoLogin" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="True"/>
+                    </Grid>
+
+                    <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
+
+                    <!-- Deletar Broker -->
+                    <Grid Margin="0,0,0,12">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Deletar Broker"/>
+                        <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Apagar _broker.dat" Margin="0,2,0,0"/>
+                      </StackPanel>
+                      <ui:ToggleSwitch x:Name="tsDeletarBroker" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+                    </Grid>
+
+                    <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
+
+                    <!-- Logs Detalhados -->
+                    <Grid Margin="0,0,0,12">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Logs Detalhados"/>
+                        <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Capturar stack traces" Margin="0,2,0,0"/>
+                      </StackPanel>
+                      <ui:ToggleSwitch x:Name="tsVerboseLogs" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="True"/>
+                    </Grid>
+
+                    <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
+
+                    <!-- Deletar _BrokerCustom -->
+                    <Grid Margin="0,0,0,12">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Limpar Broker Custom"/>
+                        <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Apagar _BrokerCustom.dat" Margin="0,2,0,0"/>
+                      </StackPanel>
+                      <ui:ToggleSwitch x:Name="tsApagarHost" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+                    </Grid>
+
+                    <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
+
+                    <!-- NormalizePath -->
+                    <Grid Margin="0,0,0,12">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="NormalizePath"/>
+                        <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Normalizar caminhos no Alias.dat" Margin="0,2,0,0"/>
+                      </StackPanel>
+                      <ui:ToggleSwitch x:Name="tsNormalizePath" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+                    </Grid>
+
+                    <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
+
+                    <!-- Enable Process Isolation -->
+                    <Grid Margin="0,0,0,12">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Enable Process Isolation"/>
+                        <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Isolar processos do RM Host" Margin="0,2,0,0"/>
+                      </StackPanel>
+                      <ui:ToggleSwitch x:Name="tsEnableProcessIsolation" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+                    </Grid>
+
+                    <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
+
+                    <!-- Job Server 3 Camadas -->
+                    <Grid Margin="0,0,0,12">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Job Server 3 Camadas"/>
+                        <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Habilitar modo 3 camadas" Margin="0,2,0,0"/>
+                      </StackPanel>
+                      <ui:ToggleSwitch x:Name="tsJobServer3Camadas" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+                    </Grid>
+
+                    <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
+
+                    <!-- Enable Compression -->
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Enable Compression"/>
+                        <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Compressão de dados do Host" Margin="0,2,0,0"/>
+                      </StackPanel>
+                      <ui:ToggleSwitch x:Name="tsEnableCompression" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+
+            </ikw:SimpleStackPanel>
+          </ScrollViewer>
+        </Grid>
+              <!-- Sub-tela 2: Gerenciar Aliases do Banco (Modal/Overlay) -->
+        <Grid x:Name="gridAliasManagerForm" Visibility="Collapsed" Margin="18,15,18,15">
+          <Grid.RowDefinitions>
+            <!-- Header -->
+            <RowDefinition Height="Auto" />
+            <!-- Scrollable Content -->
+            <RowDefinition Height="*" />
+            <!-- Sticky Bottom Action Bar -->
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+            
+          <!-- Header (Row 0) -->
+          <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#4DA6FF" VerticalAlignment="Center" Margin="0,0,8,0"/>
+              <TextBlock Text="GERENCIAR BASES" FontSize="16" FontWeight="Bold" Foreground="#E6FFFFFF" VerticalAlignment="Center"/>
+            </StackPanel>
+            <Button x:Name="btnVoltarCliente" Grid.Column="1" Height="28" Padding="12,0,12,0" Style="{StaticResource PremiumCardButtonStyle}" Content="Voltar" Click="btnVoltarCliente_Click"/>
+          </Grid>
+
+          <!-- Scrollable Content (Row 1) -->
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,10">
+            <StackPanel Margin="0,0,18,0">
+              
+              <!-- Connection List Section -->
+              <TextBlock Text="CONEXÕES ATIVAS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,8"/>
+              <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Margin="0,0,0,10" ClipToBounds="True">
+                <ListBox x:Name="lstBases" Height="140" Background="Transparent" BorderThickness="0" 
+                         SelectionChanged="lstBases_SelectionChanged" DisplayMemberPath="name"/>
+              </Border>
+              
+              <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="8" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button x:Name="btnNovaBase" Grid.Column="0" Style="{StaticResource PremiumCardButtonStyle}" Content="+ Nova Base" Click="btnNovaBase_Click" HorizontalAlignment="Stretch" Height="34"/>
+                <Button x:Name="btnImportarAliases" Grid.Column="2" Style="{StaticResource PremiumCardButtonStyle}" Content="Importar Aliases" Click="btnImportarAliases_Click" HorizontalAlignment="Stretch" Height="34"/>
+              </Grid>
+
+              <!-- Detail Editor (hidden when no connection is selected) -->
+              <StackPanel x:Name="stackDetailsEditor" Visibility="Collapsed">
+                
+                <!-- Card 1: Detalhes da Conexão -->
+                <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12" Margin="0,0,0,15">
+                  <StackPanel>
+                    <!-- Provider Toggle -->
+                    <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="PROVEDOR"/>
+                    <Border Background="#0A0A0B" CornerRadius="8" Padding="2" HorizontalAlignment="Left" Margin="0,0,0,12">
+                      <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="rbSql" Content="MS SQL Server" Style="{StaticResource SegmentRadioButtonStyle}" IsChecked="True" GroupName="DbProviderGroup" Checked="rbDbProvider_Checked"/>
+                        <RadioButton x:Name="rbOracle" Content="Oracle" Style="{StaticResource SegmentRadioButtonStyle}" GroupName="DbProviderGroup" Checked="rbDbProvider_Checked"/>
+                      </StackPanel>
+                    </Border>
+
+                    <!-- Nome do Alias -->
+                    <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="NOME DO ALIAS"/>
+                    <TextBox x:Name="txtDbAliasName" Height="34" ui:ControlHelper.CornerRadius="6" ui:ControlHelper.PlaceholderText="Ex: ALIAS_TREINAMENTO" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" Margin="0,0,0,12"/>
+
+                    <!-- Cliente Associado / Perfil -->
+                    <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="CLIENTE ASSOCIADO / PERFIL"/>
+                    <ComboBox x:Name="cbClienteAssociado" Height="34" ui:ControlHelper.CornerRadius="6" HorizontalAlignment="Stretch" Margin="0,0,0,12" IsEnabled="False"/>
+
+                    <!-- Versão da Base (RM) -->
+                    <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="VERSÃO DA BASE (RM)"/>
+                    <ComboBox x:Name="cbDbVersion" Height="34" ui:ControlHelper.CornerRadius="6" HorizontalAlignment="Stretch" Margin="0,0,0,12"/>
+
+                    <!-- Usuário RM and Senha RM -->
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                      </Grid.ColumnDefinitions>
+
+                      <StackPanel Grid.Column="0">
+                        <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="USUÁRIO RM"/>
+                        <TextBox x:Name="txtRmUser" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White"/>
+                      </StackPanel>
+
+                      <StackPanel Grid.Column="2">
+                        <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="SENHA RM"/>
+                        <PasswordBox x:Name="pbRmPass" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" MinWidth="130"/>
+                      </StackPanel>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+
+                <!-- Card 2: Configurações Avançadas -->
+                <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12" Margin="0,0,0,15">
+                  <StackPanel>
+                    <TextBlock Text="CONFIGURAÇÕES AVANÇADAS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,12"/>
+
+                    <!-- Servidor de Banco (Host) -->
+                    <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="SERVIDOR DE BANCO (HOST)"/>
+                    <TextBox x:Name="txtDbServer" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" Margin="0,0,0,12"/>
+
+                    <!-- Nome da Base de Dados (SQL) -->
+                    <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="NOME DA BASE DE DADOS" x:Name="lblDbBaseName"/>
+                    <TextBox x:Name="txtDbBaseName" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" Margin="0,0,0,12"/>
+
+                    <!-- Usuário Banco and Senha Banco -->
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                      </Grid.ColumnDefinitions>
+
+                      <StackPanel Grid.Column="0">
+                        <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="USUÁRIO BANCO"/>
+                        <TextBox x:Name="txtDbUser" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White"/>
+                      </StackPanel>
+
+                      <StackPanel Grid.Column="2">
+                        <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="SENHA BANCO"/>
+                        <PasswordBox x:Name="pbDbPass" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" MinWidth="130"/>
+                      </StackPanel>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+
+                <!-- Card 3: Serviços de Job -->
+                <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12" Margin="0,0,0,5">
+                  <StackPanel>
+                    <TextBlock Text="SERVIÇOS DE JOB" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,12"/>
+
+                    <!-- Checkboxes -->
+                    <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,12">
+                      <StackPanel>
+                        <CheckBox x:Name="chkRunService" Content="RunService" Foreground="White" IsChecked="True" Margin="0,0,0,10"/>
+                        <CheckBox x:Name="chkJobProcessing" Content="Habilitar Processamento de Jobs" Foreground="White" Margin="0,0,0,10"/>
+                        <CheckBox x:Name="chkLocalOnly" Content="Executar Apenas Jobs Locais" Foreground="White" Margin="0,0,0,10"/>
+                        <CheckBox x:Name="chkProcessPool" Content="Habilitar pool de processos" Foreground="White"/>
+                      </StackPanel>
+                    </Border>
+
+                    <!-- Execuções Simultâneas -->
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <TextBlock Text="Execuções Simultâneas" Foreground="White" VerticalAlignment="Center"/>
+                      <TextBox x:Name="txtMaxThreads" Grid.Column="1" Width="80" Height="30" ui:ControlHelper.CornerRadius="4" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Padding="4,0,4,0" CaretBrush="White"/>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+                
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+
+          <!-- Sticky Bottom Action Bar (Row 2, does not scroll) -->
+          <Border Grid.Row="2" x:Name="borderActionBar" Visibility="Collapsed" Background="Transparent" BorderThickness="0" Padding="0,12,0,0" Margin="0,10,0,0">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+
+              <Button x:Name="btnSalvarBase" Grid.Column="0" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumPrimaryButtonStyle}" Content="Salvar Alterações" Click="btnSalvarBase_Click" FontWeight="SemiBold"/>
+              <Button x:Name="btnTestarConexao" Grid.Column="2" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumCardButtonStyle}" Content="Testar Conexão" Click="btnTestarConexao_Click" FontWeight="SemiBold"/>
+              <Button x:Name="btnDeletarBase" Grid.Column="4" Width="38" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumRedButtonStyle}" ToolTip="Remover Alias" Click="btnDeletarBase_Click">
+                <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Button>
+            </Grid>
+          </Border>
+        </Grid>
+        </Grid>
+
+      <!-- Tab 4: SOBRE -->
+      <Grid x:Name="gridTabSobre" Visibility="Collapsed" Margin="18,15,18,15">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel VerticalAlignment="Top" HorizontalAlignment="Center">
+
+            <Image Source="pack://application:,,,/RM_CORE.ico" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,20,0,12" RenderOptions.BitmapScalingMode="HighQuality"/>
+            <TextBlock Text="RM Core" FontSize="22" FontWeight="Bold" Foreground="#E6FFFFFF" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="txtVersaoApp" Text="Versão 1.0.0" FontSize="12" Foreground="#80FFFFFF" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+            <TextBlock Text="Miguel Sena" FontSize="11" Foreground="#4DA6FF" Margin="0,6,0,0" HorizontalAlignment="Center"/>
+            <TextBlock Text="github.com/senamiguel" FontSize="11" Foreground="#80FFFFFF" Margin="0,2,0,0" HorizontalAlignment="Center"/>
+
+            <!-- Update status (hidden by default) -->
+            <Border x:Name="bordaAtualizacao" Visibility="Collapsed" Background="#0C0078D4" BorderBrush="#1A0078D4" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,20,0,0" Width="320">
+              <StackPanel>
+                <TextBlock x:Name="txtUpdateInfo" Text="" FontSize="12" Foreground="#E6FFFFFF" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                <Button x:Name="btnBaixarUpdate" Style="{StaticResource PremiumPrimaryButtonStyle}" Content="Baixar Atualização" Click="btnBaixarUpdate_Click" Height="36" FontSize="12"/>
+              </StackPanel>
+            </Border>
+
+            <!-- Reconfigurar (botão pra forçar wizard) -->
+            <Button x:Name="btnReconfigurar" Content="Reconfigurar (wizard)" Click="btnReconfigurar_Click" Margin="0,20,0,0" Width="320" Height="38" HorizontalAlignment="Center"
+                    Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" Foreground="#E6FFFFFF" FontSize="12" FontWeight="SemiBold" Cursor="Hand">
+              <Button.Template>
+                <ControlTemplate TargetType="Button">
+                  <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
+                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  </Border>
+                  <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                      <Setter TargetName="border" Property="Background" Value="#16FFFFFF"/>
+                    </Trigger>
+                  </ControlTemplate.Triggers>
+                </ControlTemplate>
+              </Button.Template>
+            </Button>
+
+            <!-- Configurações -->
+            <TextBlock Text="CONFIGURAÇÕES" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,24,0,8" HorizontalAlignment="Left" Width="320"/>
+            <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,8,15,8" Width="320" HorizontalAlignment="Center">
+              <StackPanel>
+
+                <Grid Margin="0,8,0,8">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Fechar minimiza pro tray"/>
+                    <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="X esconde; Sair pelo menu encerra" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                  </StackPanel>
+                  <ui:ToggleSwitch x:Name="tsCloseMinimizesToTray" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="True" Toggled="tsAppSetting_Toggled"/>
+                </Grid>
+
+                <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,0"/>
+
+                <Grid Margin="0,8,0,8">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Iniciar com o Windows"/>
+                    <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Adiciona atalho no startup" Margin="0,2,0,0"/>
+                  </StackPanel>
+                  <ui:ToggleSwitch x:Name="tsStartWithWindows" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False" Toggled="tsAppSetting_Toggled"/>
+                </Grid>
+
+                <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,0"/>
+
+                <Grid Margin="0,8,0,8">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Iniciar minimizado"/>
+                    <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Sobe direto pro tray ao abrir" Margin="0,2,0,0"/>
+                  </StackPanel>
+                  <ui:ToggleSwitch x:Name="tsStartMinimized" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False" Toggled="tsAppSetting_Toggled"/>
+                </Grid>
+
+              </StackPanel>
+            </Border>
+
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
+
+    </Grid>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <Border Grid.Row="1" Background="#141416" BorderBrush="#1AFFFFFF" BorderThickness="0,1,0,0" Height="78" VerticalAlignment="Center">
+      <UniformGrid Columns="4" Margin="10,-1,10,4">
+        <RadioButton x:Name="rbTabInicio" IsChecked="True" Style="{StaticResource BottomTabStyle}" Content="&#xED35;" Tag="INÍCIO" Click="Tab_Click"/>
+        <RadioButton x:Name="rbTabPerfil" Style="{StaticResource BottomTabStyle}" Content="&#xE77B;" Tag="CLIENTES" Click="Tab_Click"/>
+        <RadioButton x:Name="rbTabLogs" Style="{StaticResource BottomTabStyle}" Content="&#xE756;" Tag="LOGS" Click="Tab_Click"/>
+        <RadioButton x:Name="rbTabSobre" Style="{StaticResource BottomTabStyle}" Content="&#xE946;" Tag="SOBRE" Click="Tab_Click"/>
+      </UniformGrid>
+    </Border>
+
+  </Grid>
+</Window>
