@@ -437,7 +437,8 @@ namespace RM_Core
             
             UpdateFilteredAliasesList();
 
-            if (profiles.Count == 0)
+            // Só cria clientes padrão se o wizard já rodou (senão o wizard cria)
+            if (profiles.Count == 0 && _appSettings.FirstRunComplete)
             {
                 profiles["Cliente Padrão"] = new ProfileSettings 
                 { 

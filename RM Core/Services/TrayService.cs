@@ -46,11 +46,7 @@ namespace RM_Core.Services
         {
             _mainWindow.Hide();
             _notifyIcon.Visible = true;
-            _notifyIcon.ShowBalloonTip(
-                timeout: 1500,
-                tipTitle: "RM Core",
-                tipText: "Minimizado para a bandeja. Clique duplo para restaurar.",
-                tipIcon: ToolTipIcon.None);
+            ShowToast("RM Core", "Minimizado para a bandeja. Clique duplo para restaurar.");
         }
 
         /// <summary>Shows a custom toast popup with the app icon.</summary>
