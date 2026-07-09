@@ -980,7 +980,7 @@
                         </Grid.ColumnDefinitions>
                         <ComboBox x:Name="cbAliasDB" Grid.Column="0" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" SelectionChanged="cbAliasDB_SelectionChanged"/>
                         <Button x:Name="btnGerenciarAliases" Grid.Column="2" Width="34" Height="34" Style="{StaticResource PremiumCardButtonStyle}" ToolTip="Gerenciar Bases" Click="btnGerenciarAliases_Click">
-                          <TextBlock Text="&#xE109;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                          <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Button>
                       </Grid>
                     </StackPanel>
@@ -1225,7 +1225,6 @@
                     <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="MARCADOR DE COR"/>
                     <Border Background="#0A0A0B" CornerRadius="8" Padding="6,4" HorizontalAlignment="Left" Margin="0,0,0,12">
                       <StackPanel Orientation="Horizontal">
-                        <Border x:Name="colorTagNone" Width="22" Height="22" CornerRadius="11" Background="#33FFFFFF" BorderBrush="White" BorderThickness="2" MouseDown="colorTagSelector_MouseDown" Tag="" ToolTip="Sem cor" Margin="2,0"/>
                         <Border x:Name="colorTagGreen" Width="22" Height="22" CornerRadius="11" Background="#4CAF50" BorderBrush="Transparent" BorderThickness="2" MouseDown="colorTagSelector_MouseDown" Tag="green" ToolTip="Verde" Margin="2,0"/>
                         <Border x:Name="colorTagYellow" Width="22" Height="22" CornerRadius="11" Background="#FFC107" BorderBrush="Transparent" BorderThickness="2" MouseDown="colorTagSelector_MouseDown" Tag="yellow" ToolTip="Amarelo" Margin="2,0"/>
                         <Border x:Name="colorTagRed" Width="22" Height="22" CornerRadius="11" Background="#F44336" BorderBrush="Transparent" BorderThickness="2" MouseDown="colorTagSelector_MouseDown" Tag="red" ToolTip="Vermelho" Margin="2,0"/>
@@ -1258,8 +1257,8 @@
                           </Grid.ColumnDefinitions>
                           <PasswordBox x:Name="pbRmPass" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" MinWidth="130"/>
                           <TextBox x:Name="txtRmPassVisible" Grid.Column="0" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,30,0" CaretBrush="White" Visibility="Collapsed" MinWidth="130"/>
-                          <Button x:Name="btnToggleRmPass" Grid.Column="1" Width="28" Height="28" Margin="0,0,4,0" Background="Transparent" BorderThickness="0" Click="btnTogglePass_Click" Tag="rm" ToolTip="Mostrar/ocultar senha" VerticalAlignment="Center">
-                            <TextBlock x:Name="iconToggleRmPass" Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF"/>
+                          <Button x:Name="btnToggleRmPass" Grid.Column="1" Width="32" Height="32" Margin="0,0,4,0" Background="Transparent" BorderThickness="0" Click="btnTogglePass_Click" Tag="rm" ToolTip="Mostrar/ocultar senha" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                            <TextBlock x:Name="iconToggleRmPass" Text="&#xE7B3;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="#B3FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                           </Button>
                         </Grid>
                       </StackPanel>
@@ -1302,8 +1301,8 @@
                           </Grid.ColumnDefinitions>
                           <PasswordBox x:Name="pbDbPass" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" MinWidth="130"/>
                           <TextBox x:Name="txtDbPassVisible" Grid.Column="0" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,30,0" CaretBrush="White" Visibility="Collapsed" MinWidth="130"/>
-                          <Button x:Name="btnToggleDbPass" Grid.Column="1" Width="28" Height="28" Margin="0,0,4,0" Background="Transparent" BorderThickness="0" Click="btnTogglePass_Click" Tag="db" ToolTip="Mostrar/ocultar senha" VerticalAlignment="Center">
-                            <TextBlock x:Name="iconToggleDbPass" Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF"/>
+                          <Button x:Name="btnToggleDbPass" Grid.Column="1" Width="32" Height="32" Margin="0,0,4,0" Background="Transparent" BorderThickness="0" Click="btnTogglePass_Click" Tag="db" ToolTip="Mostrar/ocultar senha" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                            <TextBlock x:Name="iconToggleDbPass" Text="&#xE7B3;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="#B3FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                           </Button>
                         </Grid>
                       </StackPanel>

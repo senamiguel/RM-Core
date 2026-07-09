@@ -2697,7 +2697,7 @@ namespace RM_Core
 
         private void UpdateColorTagSelectorUI(string selectedColor)
         {
-            var borders = new[] { colorTagNone, colorTagGreen, colorTagYellow, colorTagRed };
+            var borders = new[] { colorTagGreen, colorTagYellow, colorTagRed };
             foreach (var b in borders)
             {
                 b.BorderBrush = (b.Tag?.ToString() == selectedColor) ? new SolidColorBrush(System.Windows.Media.Colors.White) : new SolidColorBrush(System.Windows.Media.Colors.Transparent);
@@ -2811,12 +2811,14 @@ namespace RM_Core
                         txtRmPassVisible.Text = pbRmPass.Password;
                         pbRmPass.Visibility = Visibility.Collapsed;
                         txtRmPassVisible.Visibility = Visibility.Visible;
+                        iconToggleRmPass.Text = "\uED1A";
                     }
                     else
                     {
                         pbRmPass.Password = txtRmPassVisible.Text;
                         pbRmPass.Visibility = Visibility.Visible;
                         txtRmPassVisible.Visibility = Visibility.Collapsed;
+                        iconToggleRmPass.Text = "\uE7B3";
                     }
                 }
                 else if (target == "db")
@@ -2826,12 +2828,14 @@ namespace RM_Core
                         txtDbPassVisible.Text = pbDbPass.Password;
                         pbDbPass.Visibility = Visibility.Collapsed;
                         txtDbPassVisible.Visibility = Visibility.Visible;
+                        iconToggleDbPass.Text = "\uED1A";
                     }
                     else
                     {
                         pbDbPass.Password = txtDbPassVisible.Text;
                         pbDbPass.Visibility = Visibility.Visible;
                         txtDbPassVisible.Visibility = Visibility.Collapsed;
+                        iconToggleDbPass.Text = "\uE7B3";
                     }
                 }
             }
