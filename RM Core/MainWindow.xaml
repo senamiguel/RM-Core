@@ -1387,14 +1387,14 @@
                     <ColumnDefinition Width="*"/>
                   </Grid.ColumnDefinitions>
 
-                  <StackPanel Grid.Column="0">
+                  <StackPanel Grid.Column="0" HorizontalAlignment="Stretch">
                     <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="CLIENTE PADRÃO" Margin="0,0,0,6"/>
-                    <ComboBox x:Name="cbDefaultClient" Height="38" FontSize="12" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" Foreground="White" Padding="10,0,10,0" SelectionChanged="cbDefaultClient_SelectionChanged"/>
+                    <ComboBox x:Name="cbDefaultClient" Height="38" FontSize="12" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" Foreground="White" Padding="10,0,10,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" SelectionChanged="cbDefaultClient_SelectionChanged"/>
                   </StackPanel>
 
-                  <StackPanel Grid.Column="2">
+                  <StackPanel Grid.Column="2" HorizontalAlignment="Stretch">
                     <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="BASE PADRÃO" Margin="0,0,0,6"/>
-                    <ComboBox x:Name="cbDefaultBase" Height="38" FontSize="12" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" Foreground="White" Padding="10,0,10,0" IsEnabled="False" DisplayMemberPath="name" SelectionChanged="cbDefaultBase_SelectionChanged"/>
+                    <ComboBox x:Name="cbDefaultBase" Height="38" FontSize="12" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" Foreground="White" Padding="10,0,10,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" IsEnabled="False" DisplayMemberPath="name" SelectionChanged="cbDefaultBase_SelectionChanged"/>
                   </StackPanel>
                 </Grid>
 
