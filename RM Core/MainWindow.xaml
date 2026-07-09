@@ -489,14 +489,15 @@
 
                   <Border Grid.Row="1" Grid.ColumnSpan="3" BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,8,0,8"/>
 
-                  <Button x:Name="btnApagarBroker" Grid.Row="2" Grid.ColumnSpan="3"
-                          Style="{StaticResource PremiumCardButtonStyle}"
-                          Height="34" Click="btnApagarBroker_Click">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                      <TextBlock Text="&#xE107;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                      <TextBlock Text="Apagar _Broker.dat" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    </StackPanel>
-                  </Button>
+                  <!-- Apagar Broker.dat -->
+                  <Grid Grid.Row="2" Grid.Column="0">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Grid.ColumnSpan="2" Margin="0,0,20,0"><Run Language="pt-br" Text="Apagar Broker.dat"/></TextBlock>
+                    <ui:ToggleSwitch x:Name="tsDeletarBrokerDat" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" Margin="10,0,0,0" Toggled="ts_Toggled" Width="52" IsOn="True"/>
+                  </Grid>
                 </Grid>
               </Border>
             </StackPanel>

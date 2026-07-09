@@ -63,46 +63,41 @@ namespace RM_Core
                 var doc = XDocument.Parse(xmlOutput);
                 foreach (var siteEl in doc.Descendants("site"))
                 {
-                    var site = new SiteInfo
-                    {
-                        Name = siteEl.Attribute("name")?.Value ?? "(sem nome)",
-                        Id = siteEl.Attribute("id")?.Value ?? "0",
-                    };
+                    string siteName = siteEl.Attribute("name")?.Value ?? "(sem nome)";
+                    string siteId = siteEl.Attribute("id")?.Value ?? "0";
 
-                    // Get the physical path for the root application (or first app)
-                    var appEl = siteEl.Descendants("application").FirstOrDefault();
-                    if (appEl != null)
+                    // Cada application dentro do site vira um item separado
+                    foreach (var appEl in siteEl.Descendants("application"))
                     {
+                        string appPath = appEl.Attribute("path")?.Value ?? "/";
                         var vDirEl = appEl.Descendants("virtualDirectory").FirstOrDefault();
-                        if (vDirEl != null)
+                        string physPath = vDirEl?.Attribute("physicalPath")?.Value ?? "";
+
+                        var appDisplayName = appPath == "/"
+                            ? $"{siteName}"
+                            : $"{siteName}{appPath}";
+
+                        var site = new SiteInfo
                         {
-                            site.PhysicalPath = vDirEl.Attribute("physicalPath")?.Value ?? "";
-                            site.AppName = appEl.Attribute("path")?.Value ?? "/";
-                        }
-                    }
+                            Name = appDisplayName,
+                            Id = siteId,
+                            PhysicalPath = Environment.ExpandEnvironmentVariables(physPath),
+                            AppName = appPath,
+                            WebConfigDir = Environment.ExpandEnvironmentVariables(physPath),
+                        };
 
-                    // Determine web.config directory - use the physical path
-                    string path = site.PhysicalPath;
-                    if (!string.IsNullOrEmpty(path))
-                    {
-                        // Remove environment variables like %SystemDrive%
-                        path = Environment.ExpandEnvironmentVariables(path);
-                        site.WebConfigDir = path;
+                        _sites.Add(site);
                     }
-
-                    _sites.Add(site);
                 }
 
                 lstSites.Items.Clear();
                 foreach (var s in _sites)
-                {
                     lstSites.Items.Add(s.Name);
-                }
 
                 if (_sites.Count > 0)
                     lstSites.SelectedIndex = 0;
 
-                AddLog($"{_sites.Count} site(s) carregado(s).");
+                AddLog($"{_sites.Count} site(s)/app(s) carregado(s).");
             }
             catch (Exception ex)
             {

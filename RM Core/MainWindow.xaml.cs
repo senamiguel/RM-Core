@@ -621,6 +621,7 @@ namespace RM_Core
                 cbClienteAtivo.SelectedItem = profile.Name;
                 tsLimparBrokers.IsOn = profile.ApagarHost;
                 tsLogsDetalhados.IsOn = profile.VerboseLogs;
+                tsDeletarBrokerDat.IsOn = profile.DelBroker;
 
                 // Dynamically update and filter bases for this client!
                 UpdateAliasesUI(profile.Name);
@@ -1115,7 +1116,7 @@ namespace RM_Core
         private void ts_Toggled(object sender, RoutedEventArgs e)
         {
             if (_isSyncing) return;
-            if (cbClienteAtivo == null || cbPerfis == null || tsLimparBrokers == null || tsLogsDetalhados == null || tsApagarHost == null || tsVerboseLogs == null) return;
+            if (cbClienteAtivo == null || cbPerfis == null || tsLimparBrokers == null || tsLogsDetalhados == null || tsApagarHost == null || tsVerboseLogs == null || tsDeletarBrokerDat == null) return;
 
             string activeClient = cbClienteAtivo.SelectedItem?.ToString() ?? cbPerfis.SelectedItem?.ToString() ?? string.Empty;
             if (string.IsNullOrEmpty(activeClient)) return;
@@ -1124,12 +1125,14 @@ namespace RM_Core
             {
                 profile.ApagarHost = tsLimparBrokers.IsOn;
                 profile.VerboseLogs = tsLogsDetalhados.IsOn;
+                profile.DelBroker  = tsDeletarBrokerDat.IsOn;
 
                 _isSyncing = true;
                 try
                 {
-                    tsApagarHost.IsOn = profile.ApagarHost;
-                    tsVerboseLogs.IsOn = profile.VerboseLogs;
+                    tsApagarHost.IsOn     = profile.ApagarHost;
+                    tsVerboseLogs.IsOn    = profile.VerboseLogs;
+                    tsDeletarBroker.IsOn  = profile.DelBroker;
                 }
                 finally
                 {
@@ -1325,34 +1328,6 @@ namespace RM_Core
             }
         }
 
-        private void btnApagarBroker_Click(object sender, RoutedEventArgs e)
-        {
-            string binDir = GetBinDirectory();
-            if (string.IsNullOrEmpty(binDir))
-            {
-                AddLog("error", "Pasta de instalação do RM não configurada.");
-                MessageBox.Show("Pasta de instalação do RM não encontrada.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            string brokerPath = Path.Combine(binDir, "_broker.dat");
-            if (!File.Exists(brokerPath))
-            {
-                AddLog("info", "_broker.dat não encontrado.");
-                MessageBox.Show("Nao encontrado", "Apagar _Broker.dat", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-            try
-            {
-                File.Delete(brokerPath);
-                AddLog("info", "_broker.dat excluído manualmente.");
-                MessageBox.Show("_broker.dat excluído com sucesso!", "Apagar _Broker.dat", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                AddLog("error", $"Erro ao excluir _broker.dat: {ex.Message}");
-                MessageBox.Show($"Erro ao excluir _broker.dat: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
 
         private void btnHost2_Click(object sender, RoutedEventArgs e)
         {
@@ -2546,7 +2521,6 @@ namespace RM_Core
             btnConfigIIS.IsEnabled = !loading;
             btnReciclarAppPool.IsEnabled = !loading;
             btnLimparTemp.IsEnabled = !loading;
-            btnApagarBroker.IsEnabled = !loading;
             btnSalvarPerfil.IsEnabled = !loading;
             btnDeletarPerfil.IsEnabled = !loading;
             // btnImportarAmbientes and btnImportarAliases removed
