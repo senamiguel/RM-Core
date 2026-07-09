@@ -3837,7 +3837,25 @@ namespace RM_Core
                 AddLog("info", "Dados resetados com sucesso.");
                 MessageBox.Show("Dados resetados. O aplicativo sera reiniciado.", "Reset de Fabrica", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                System.Diagnostics.Process.Start(Application.ResourceAssembly.Location);
+                string exePath = Environment.ProcessPath
+                    ?? System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName
+                    ?? Application.ResourceAssembly.Location;
+
+                try
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = exePath,
+                        UseShellExecute = true,
+                        WorkingDirectory = Path.GetDirectoryName(exePath) ?? string.Empty
+                    };
+                    System.Diagnostics.Process.Start(psi);
+                }
+                catch (Exception startEx)
+                {
+                    AddLog("error", $"Nao foi possivel reiniciar automaticamente: {startEx.Message}. Feche e abra o app manualmente.");
+                }
+
                 Application.Current.Shutdown();
             }
             catch (Exception ex)
