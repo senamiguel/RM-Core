@@ -769,6 +769,7 @@ namespace RM_Core
 
             AddLog("info", $"Cliente \"{name}\" salvo com sucesso.");
             MessageBox.Show($"Cliente \"{name}\" salvo com sucesso!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
+            txtNomePerfil.Focus();
         }
 
         private void btnNovoPerfil_Click(object sender, RoutedEventArgs e)
@@ -776,9 +777,24 @@ namespace RM_Core
             _isSyncing = true;
             try
             {
+                cbPerfis.SelectionChanged -= cbPerfis_SelectionChanged;
+                cbClienteAtivo.SelectionChanged -= cbClienteAtivo_SelectionChanged;
+                try
+                {
+                    cbPerfis.SelectedItem = null;
+                    cbClienteAtivo.SelectedItem = null;
+                }
+                finally
+                {
+                    cbPerfis.SelectionChanged += cbPerfis_SelectionChanged;
+                    cbClienteAtivo.SelectionChanged += cbClienteAtivo_SelectionChanged;
+                }
+
                 txtNomePerfil.Text = string.Empty;
                 txtNomePerfil.Focus();
                 if (cbVersaoRM.Items.Count > 0) cbVersaoRM.SelectedIndex = 0;
+                cbAliasDB.SelectedItem = null;
+                cbBase.SelectedItem = null;
                 tsAutoLogin.IsOn = true;
                 tsDeletarBroker.IsOn = false;
                 tsVerboseLogs.IsOn = true;
@@ -787,6 +803,13 @@ namespace RM_Core
                 tsEnableProcessIsolation.IsOn = false;
                 tsJobServer3Camadas.IsOn = false;
                 tsEnableCompression.IsOn = false;
+
+                tsLimparBrokers.IsOn = false;
+                tsLogsDetalhados.IsOn = true;
+                tsDeletarBrokerDat.IsOn = false;
+
+                UpdateFavoritoIcon(false);
+
                 AddLog("info", "Preparado para cadastrar novo cliente. Digite o nome e clique em Salvar.");
             }
             finally
