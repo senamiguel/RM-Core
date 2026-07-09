@@ -2803,6 +2803,18 @@ namespace RM_Core
             {
                 panelFavoritos.Visibility = Visibility.Collapsed;
             }
+
+            var favsBases = aliases.Where(a => a.IsFavorite).ToList();
+            if (favsBases.Count > 0)
+            {
+                panelBasesFavoritas.Visibility = Visibility.Visible;
+                listBasesFavoritas.ItemsSource = null;
+                listBasesFavoritas.ItemsSource = favsBases;
+            }
+            else
+            {
+                panelBasesFavoritas.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void btnFavoritoIniciar_Click(object sender, RoutedEventArgs e)
@@ -2816,6 +2828,35 @@ namespace RM_Core
                     LoadProfileToUI(profile);
                     _ = IniciarRMPlusHostAsync();
                 }
+            }
+        }
+
+        private void btnFavoritoBaseIniciar_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string aliasId)
+            {
+                var alias = aliases.FirstOrDefault(a => a.id == aliasId);
+                if (alias == null) return;
+
+                if (profiles.TryGetValue(alias.client, out var profile))
+                {
+                    cbPerfis.SelectedItem = alias.client;
+                    cbClienteAtivo.SelectedItem = alias.client;
+                    LoadProfileToUI(profile);
+                }
+
+                _isSyncing = true;
+                try
+                {
+                    cbBase.SelectedItem = alias;
+                    cbAliasDB.SelectedItem = alias.name;
+                }
+                finally
+                {
+                    _isSyncing = false;
+                }
+
+                _ = IniciarRMPlusHostAsync();
             }
         }
 
