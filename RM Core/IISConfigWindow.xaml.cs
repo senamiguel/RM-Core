@@ -68,14 +68,15 @@ namespace RM_Core
                     string siteName = GetAttr(appEl, "SITE.NAME");
                     string appPath  = GetAttr(appEl, "path") ?? "/";
 
+                    // Pula o site raiz (path "/") — só mostra apps filhas
+                    if (appPath == "/") continue;
+
                     string phys = physPaths.TryGetValue(appName ?? "", out var p) ? p : "";
                     string expanded = Environment.ExpandEnvironmentVariables(phys);
 
-                    string displayName = appPath == "/" ? siteName : $"{siteName}{appPath}";
-
                     _sites.Add(new SiteInfo
                     {
-                        Name         = displayName ?? "(sem nome)",
+                        Name         = appPath.TrimStart('/'),
                         AppName      = appName ?? "",
                         PhysicalPath = expanded,
                         WebConfigDir = expanded,
@@ -176,7 +177,7 @@ namespace RM_Core
                 var psi = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/c \"\"{appCmdPath}\" set vdir \"{_selectedSite.Name}/\"" + " /physicalPath:\"" + newPath + "\"",
+                    Arguments = $"/c \"\"{appCmdPath}\" set vdir \"{_selectedSite.AppName}/\"" + " /physicalPath:\"" + newPath + "\"",
                     UseShellExecute = true,
                     Verb = "runas",
                     WindowStyle = ProcessWindowStyle.Hidden
