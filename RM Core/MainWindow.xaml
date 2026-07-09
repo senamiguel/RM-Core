@@ -449,32 +449,29 @@
               <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12">
                 <Grid>
                   <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
                   </Grid.ColumnDefinitions>
 
-                  <!-- Deletar Broker Custom -->
-                  <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="Deletar Broker Custom" VerticalAlignment="Center" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF"/>
-                    <ui:ToggleSwitch x:Name="tsLimparBrokers" OffContent="" OnContent="" MinWidth="0" Margin="8,0,0,0" Toggled="ts_Toggled" Width="44" IsOn="True"/>
+                  <StackPanel Grid.Column="0" HorizontalAlignment="Center" Margin="0,0,0,0">
+                    <TextBlock Text="Deletar Broker Custom" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                    <ui:ToggleSwitch x:Name="tsLimparBrokers" OffContent="" OnContent="" MinWidth="0" Toggled="ts_Toggled" IsOn="True" HorizontalAlignment="Center"/>
                   </StackPanel>
 
-                  <!-- Logs Detalhados -->
-                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                      <TextBlock Text="Logs Detalhados" VerticalAlignment="Center" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF"/>
+                  <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,6">
+                      <TextBlock Text="Logs Detalhados" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF" VerticalAlignment="Center"/>
                       <Border Background="#0078D4" CornerRadius="3" Padding="4,1" Margin="6,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="DBG" FontSize="8" FontWeight="Bold" Foreground="White" />
+                        <TextBlock Text="DBG" FontSize="8" FontWeight="Bold" Foreground="White"/>
                       </Border>
                     </StackPanel>
-                    <ui:ToggleSwitch x:Name="tsLogsDetalhados" IsOn="False" OffContent="" OnContent="" MinWidth="0" Margin="8,0,0,0" VerticalAlignment="Center" Toggled="ts_Toggled" Width="44"/>
+                    <ui:ToggleSwitch x:Name="tsLogsDetalhados" IsOn="False" OffContent="" OnContent="" MinWidth="0" Toggled="ts_Toggled" HorizontalAlignment="Center"/>
                   </StackPanel>
 
-                  <!-- Deletar Broker -->
-                  <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="Deletar Broker" VerticalAlignment="Center" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF"/>
-                    <ui:ToggleSwitch x:Name="tsDeletarBrokerDat" OffContent="" OnContent="" MinWidth="0" Margin="8,0,0,0" Toggled="ts_Toggled" Width="44" IsOn="True"/>
+                  <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                    <TextBlock Text="Deletar Broker" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                    <ui:ToggleSwitch x:Name="tsDeletarBrokerDat" OffContent="" OnContent="" MinWidth="0" Toggled="ts_Toggled" IsOn="True" HorizontalAlignment="Center"/>
                   </StackPanel>
                 </Grid>
               </Border>
