@@ -1174,6 +1174,31 @@ namespace RM_Core
             gridAliasManagerForm.Visibility = Visibility.Visible;
         }
 
+        private void btnEditarBaseHome_Click(object sender, RoutedEventArgs e)
+        {
+            string baseSelecionada = cbBase.SelectedItem?.ToString() ?? string.Empty;
+            if (string.IsNullOrEmpty(baseSelecionada))
+            {
+                AddLog("warn", "Selecione uma base primeiro.");
+                return;
+            }
+
+            // Navega pra aba Clientes > Gerenciar Bases
+            rbTabPerfil.IsChecked = true;
+            Tab_Click(rbTabPerfil, new RoutedEventArgs());
+            string activeClient = cbClienteAtivo.SelectedItem?.ToString() ?? string.Empty;
+            if (!string.IsNullOrEmpty(activeClient) && cbPerfis.Items.Contains(activeClient))
+                cbPerfis.SelectedItem = activeClient;
+            UpdateFilteredAliasesList();
+            gridClientSettingsForm.Visibility = Visibility.Collapsed;
+            gridAliasManagerForm.Visibility = Visibility.Visible;
+
+            // Seleciona a base atual na lista
+            var alias = filteredAliases.FirstOrDefault(a => a.name == baseSelecionada);
+            if (alias != null)
+                lstBases.SelectedItem = alias;
+        }
+
         private void btnDelDll_Click(object sender, RoutedEventArgs e)
         {
             if (_isOperationRunning) return;
@@ -1614,7 +1639,7 @@ namespace RM_Core
 
         private void StartPortalAluno()
         {
-            string url = "http://localhost:8080/FrameHTML/Web/App/Edu/PortalAluno/";
+            string url = "http://localhost/FrameHTML/web/app/Edu/portaleducacional";
             try
             {
                 Process.Start(new ProcessStartInfo
@@ -2940,7 +2965,14 @@ namespace RM_Core
             SetLoadingState(true);
             try
             {
-                string customPath = @"C:\totvs\CorporeRM\RM.Net\Custom";
+                string binDir = GetBinDirectory();
+                if (string.IsNullOrEmpty(binDir))
+                {
+                    AddLog("error", "Pasta de instalação do RM não configurada. Rode o wizard pela aba Sobre.");
+                    MessageBox.Show("A pasta de instalação do RM não foi encontrada.\n\nAbra a aba Sobre e clique em 'Reconfigurar' (wizard) para apontar a pasta correta.", "RM não encontrado", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                string customPath = Path.Combine(binDir, "Custom");
                 var svc = new SystemService();
                 var (total, invalidas, semPrefixo) = svc.ValidarCustomDLLs(customPath);
 
@@ -2990,7 +3022,7 @@ namespace RM_Core
                     _updateCheckFailed = false;
                     Dispatcher.Invoke(() =>
                     {
-                        _trayService.ShowBalloon(
+                        _trayService.ShowToast(
                             "Atualização disponível!",
                             $"Versão {info.Version} disponível. Acesse a aba Sobre para baixar.");
                         AddLog("info", $"[Auto-Update] Nova versão disponível: {info.Version}");
