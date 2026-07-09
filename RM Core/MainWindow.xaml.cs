@@ -1373,10 +1373,46 @@ namespace RM_Core
             }
         }
 
-        private void btnExecutarSql_Click(object sender, RoutedEventArgs e)
+        private void btnAbrirSSMS_Click(object sender, RoutedEventArgs e)
         {
-            var win = new SqlQueryWindow { Owner = this };
-            win.ShowDialog();
+            try
+            {
+                var alias = GetActiveAlias();
+                if (alias == null || string.IsNullOrWhiteSpace(alias.server))
+                {
+                    MessageBox.Show("Selecione uma base com servidor configurado.", "Abrir SSMS", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                string ssmsPath = null;
+                string[] possiblePaths = {
+                    @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe",
+                    @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 19\Common7\IDE\Ssms.exe",
+                    @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 18\Common7\IDE\Ssms.exe",
+                };
+                foreach (var p in possiblePaths)
+                {
+                    if (File.Exists(p)) { ssmsPath = p; break; }
+                }
+
+                if (ssmsPath == null)
+                {
+                    MessageBox.Show("SQL Server Management Studio não encontrado.\nVerifique se está instalado.", "SSMS não encontrado", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = ssmsPath,
+                    Arguments = $"-S \"{alias.server}\"",
+                    UseShellExecute = true
+                });
+                AddLog("info", $"SSMS aberto: servidor {alias.server}");
+            }
+            catch (Exception ex)
+            {
+                AddLog("error", $"Erro ao abrir SSMS: {ex.Message}");
+            }
         }
 
         private void btnReciclarAppPool_Click(object sender, RoutedEventArgs e)
@@ -2462,7 +2498,7 @@ namespace RM_Core
             btnDuplicarBase.IsEnabled = !loading;
             btnBaixarUpdate.IsEnabled = !loading;
             btnLimparLogs.IsEnabled = !loading;
-            btnExecutarSql.IsEnabled = !loading;
+            btnAbrirSSMS.IsEnabled = !loading;
             btnAtualizarServicos.IsEnabled = !loading;
             
             menuIniciarSeparado.IsEnabled = !loading;

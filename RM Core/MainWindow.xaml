@@ -688,13 +688,13 @@
                 </StackPanel>
               </Button>
 
-              <!-- Executar SQL -->
-              <Button x:Name="btnExecutarSql" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Height="82" HorizontalContentAlignment="Left"
-                      Style="{StaticResource PremiumCardButtonStyle}" Click="btnExecutarSql_Click" HorizontalAlignment="Stretch">
+              <!-- Abrir SSMS -->
+              <Button x:Name="btnAbrirSSMS" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Height="82" HorizontalContentAlignment="Left"
+                      Style="{StaticResource PremiumCardButtonStyle}" Click="btnAbrirSSMS_Click" HorizontalAlignment="Stretch">
                 <StackPanel VerticalAlignment="Center">
                   <TextBlock Text="&#xE756;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#E6FFFFFF" Margin="0,0,0,6"/>
-                  <TextBlock Text="Executar SQL" FontSize="12" FontWeight="Bold" Foreground="#E6FFFFFF"/>
-                  <TextBlock Text="CONSULTAS SELECT" FontSize="8" Foreground="#80FFFFFF" Margin="0,2,0,0"/>
+                  <TextBlock Text="Abrir SSMS" FontSize="12" FontWeight="Bold" Foreground="#E6FFFFFF"/>
+                  <TextBlock Text="SQL SERVER MANAGEMENT STUDIO" FontSize="8" Foreground="#80FFFFFF" Margin="0,2,0,0"/>
                 </StackPanel>
               </Button>
             </Grid>
