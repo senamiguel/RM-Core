@@ -46,7 +46,6 @@ Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortugue
 Name: "desktopicon"; Description: "Criar atalho na &Área de Trabalho"; GroupDescription: "Atalhos:"; Flags: unchecked
 
 [Files]
-; Binários do build Release (Costura.Fody já embedded as DLLs)
 Source: "..\RM Core\bin\Release\net9.0-windows10.0.18362.0\RM Core.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\RM Core\bin\Release\net9.0-windows10.0.18362.0\RM Core.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\RM Core\bin\Release\net9.0-windows10.0.18362.0\RM Core.deps.json"; DestDir: "{app}"; Flags: ignoreversion
@@ -61,104 +60,84 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 
-[UninstallRun]
-; Nada a fazer no uninstall
-
-[UninstallDelete]
-; Limpa settings/window pos (opcional - mantém histórico)
-; Type: filesandordirs; Name: "{localappdata}\RM_Core"
-
 [Code]
+
 // ============================================================
-// Helpers
+//  Detecta .NET 9 Desktop Runtime via registry
 // ============================================================
 
 function IsDotNet9DesktopInstalled(): Boolean;
 var
-  Key: String;
   SubKeys: TArrayOfString;
   I: Integer;
-  Version: String;
 begin
   Result := False;
-  // Verifica versões do Microsoft.WindowsDesktop.App >= 9.0
-  // Path: HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App
-  if RegKeyExists(HKLM, 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App') then
+  if RegGetSubkeyNames(HKLM, 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App', SubKeys) then
   begin
-    if RegGetSubkeyNames(HKLM, 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App', SubKeys) then
+    for I := 0 to GetArrayLength(SubKeys) - 1 do
     begin
-      for I := 0 to GetArrayLength(SubKeys) - 1 do
+      if (Length(SubKeys[I]) >= 2) and (Copy(SubKeys[I], 1, 2) = '9.') then
       begin
-        Version := SubKeys[I];
-        // Version string format: "9.0.0" — checa se começa com "9."
-        if (Length(Version) >= 2) and (Copy(Version, 1, 2) = '9.') then
-        begin
-          Result := True;
-          Exit;
-        end;
-      end;
-    end;
-  end;
-
-  // Fallback: checa no user-level também
-  if not Result then
-  begin
-    if RegKeyExists(HKCU, 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App') then
-    begin
-      if RegGetSubkeyNames(HKCU, 'SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App', SubKeys) then
-      begin
-        for I := 0 to GetArrayLength(SubKeys) - 1 do
-        begin
-          Version := SubKeys[I];
-          if (Length(Version) >= 2) and (Copy(Version, 1, 2) = '9.') then
-          begin
-            Result := True;
-            Exit;
-          end;
-        end;
+        Result := True;
+        Exit;
       end;
     end;
   end;
 end;
+
+// ============================================================
+//  Baixa e instala .NET 9 via PowerShell (nativo do Windows)
+//  Usa Invoke-WebRequest + dotnet-install.ps1 oficial
+// ============================================================
 
 function InstallDotNet9DesktopRuntime(): Boolean;
 var
   TempDir: String;
   ScriptPath: String;
   InstPath: String;
-  InstallPage: TDownloadWizardPage;
+  PSCommand: String;
   ResultCode: Integer;
 begin
   Result := False;
-  TempDir := ExpandConstant('{tmp}\rmcore_dotnet_install');
-  if not ForceDirectories(TempDir) then
+
+  // Cria pasta temporária
+  TempDir := ExpandConstant('{tmp}\rmcore_dotnet');
+  if not CreateDir(TempDir) then
   begin
-    MsgBox('Não foi possível criar pasta temporária: ' + TempDir, mbError, MB_OK);
+    MsgBox('Nao foi possivel criar pasta temporaria.', mbError, MB_OK);
     Exit;
   end;
 
   ScriptPath := TempDir + '\dotnet-install.ps1';
   InstPath := 'C:\Program Files\dotnet';
 
-  // Baixa o script oficial de instalação (URL estável: dot.net/v1/dotnet-install.ps1)
-  if not DownloadTemporaryFile(
-    'https://dot.net/v1/dotnet-install.ps1',
-    ScriptPath, '', nil) then
+  // PowerShell: baixa o script oficial (usando aspas simples no comando
+  // pra nao conflitar com as aspas duplas da shell externa)
+  PSCommand :=
+    '[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; ' +
+    'Invoke-WebRequest -Uri ''https://dot.net/v1/dotnet-install.ps1'' -OutFile ''' + ScriptPath + '''';
+
+  if not Exec('powershell.exe',
+    '-NoProfile -ExecutionPolicy Bypass -Command "' + PSCommand + '"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
   begin
-    MsgBox('Falha ao baixar dotnet-install.ps1. Verifique sua conexão com a internet.', mbError, MB_OK);
+    MsgBox('Falha ao baixar dotnet-install.ps1. Verifique sua conexao.', mbError, MB_OK);
     Exit;
   end;
 
-  // Roda o script PowerShell como admin, instalando Windows Desktop Runtime
-  // -Runtime windowsdesktop: instala só o WPF (menor que o ASP.NET Core completo)
-  // -Version 9.0.0: fixa na versão 9 (atual LTS-like pra WPF)
-  // -InstallPath: C:\Program Files\dotnet (padrão Windows)
+  if ResultCode <> 0 then
+  begin
+    MsgBox('Falha no download. Codigo: ' + IntToStr(ResultCode), mbError, MB_OK);
+    Exit;
+  end;
+
+  // Executa o script para instalar o Windows Desktop Runtime 9.0
   if not Exec('powershell.exe',
     '-NoProfile -ExecutionPolicy Bypass -File "' + ScriptPath +
     '" -Runtime windowsdesktop -Version 9.0.0 -InstallPath "' + InstPath + '"',
     '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
   begin
-    MsgBox('Falha ao executar dotnet-install.ps1. Erro de permissão?', mbError, MB_OK);
+    MsgBox('Falha ao executar dotnet-install.ps1. Erro de permissao?', mbError, MB_OK);
     Exit;
   end;
 
@@ -169,42 +148,42 @@ begin
   end
   else
   begin
-    MsgBox('A instalação do .NET 9 falhou (código ' + IntToStr(ResultCode) + '). O app pode não rodar.', mbWarning, MB_OK);
+    MsgBox('A instalacao do .NET 9 falhou (codigo ' + IntToStr(ResultCode) + ').', mbError, MB_OK);
   end;
 end;
 
+// ============================================================
+//  Inicialização — pergunta antes de começar
+// ============================================================
+
 function InitializeSetup(): Boolean;
-var
-  ErrorCode: Integer;
 begin
   Result := True;
-
-  // Welcome page customizada
-  // (pode customizar aqui se quiser)
 
   if not IsDotNet9DesktopInstalled() then
   begin
     if MsgBox(
       'O RM Core precisa do .NET 9 Desktop Runtime para funcionar.' + #13#10 + #13#10 +
-      'Não foi detectado na sua máquina.' + #13#10 + #13#10 +
-      'Deseja baixar e instalar agora? (~55MB)' + #13#10 + #13#10 +
-      '(Se você já tem mas em versão diferente, pode prosseguir e tentar abrir o app)',
+      'Nao foi detectado na sua maquina.' + #13#10 + #13#10 +
+      'Deseja baixar e instalar agora? (~55 MB)' + #13#10 + #13#10 +
+      '(Se voce ja tem o .NET 9 instalado em local diferente, prossiga.)',
       mbConfirmation, MB_YESNO) = IDYES then
     begin
       if not InstallDotNet9DesktopRuntime() then
       begin
-        if MsgBox('A instalação do .NET 9 falhou ou foi cancelada. Continuar a instalação do RM Core mesmo assim?',
+        if MsgBox(
+          'A instalacao do .NET 9 falhou ou foi cancelada.' + #13#10 +
+          'Continuar a instalacao do RM Core mesmo assim (o app pode nao funcionar)?',
           mbConfirmation, MB_YESNO) = IDNO then
         begin
           Result := False;
         end;
       end;
     end;
-    // Se disse não, continua mesmo assim (app pode não funcionar)
   end;
 end;
 
 function NeedRestart(): Boolean;
 begin
-  Result := False; // Não força reboot; pede pro user reiniciar manualmente se preciso
+  Result := False;
 end;

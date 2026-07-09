@@ -788,11 +788,13 @@
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="6" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="6" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="6" />
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
 
@@ -802,22 +804,29 @@
                 <ComboBox x:Name="cbPerfis" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" SelectionChanged="cbPerfis_SelectionChanged"/>
               </StackPanel>
 
+              <!-- + Novo Cliente Button -->
+              <Button x:Name="btnNovoPerfil" Grid.Column="2" Width="36" Height="36" Margin="0,17,0,0"
+                      Style="{StaticResource PremiumCardButtonStyle}"
+                      ToolTip="Novo Cliente" Click="btnNovoPerfil_Click">
+                <TextBlock Text="+" FontFamily="Inter, Segoe UI, Arial" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#E6FFFFFF"/>
+              </Button>
+
               <!-- Save Profile Button -->
-              <Button x:Name="btnSalvarPerfil" Grid.Column="2" Width="36" Height="36" Margin="0,17,0,0"
+              <Button x:Name="btnSalvarPerfil" Grid.Column="4" Width="36" Height="36" Margin="0,17,0,0"
                       Style="{StaticResource PremiumCardButtonStyle}"
                       ToolTip="Salvar Cliente" Click="btnSalvarPerfil_Click">
                 <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
               </Button>
 
               <!-- Delete Profile Button -->
-              <Button x:Name="btnDeletarPerfil" Grid.Column="4" Width="36" Height="36" Margin="0,17,0,0"
+              <Button x:Name="btnDeletarPerfil" Grid.Column="6" Width="36" Height="36" Margin="0,17,0,0"
                       Style="{StaticResource PremiumRedButtonStyle}"
                       ToolTip="Excluir Cliente" Click="btnDeletarPerfil_Click">
                 <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
               </Button>
 
               <!-- Importar Ambientes Button -->
-              <Button x:Name="btnImportarAmbientes" Grid.Column="6" Width="36" Height="36" Margin="0,17,0,0"
+              <Button x:Name="btnImportarAmbientes" Grid.Column="8" Width="36" Height="36" Margin="0,17,0,0"
                       Style="{StaticResource PremiumCardButtonStyle}"
                       ToolTip="Importar Ambientes" Click="btnImportarAmbientes_Click">
                 <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -1181,25 +1190,86 @@
       <!-- Tab 4: SOBRE -->
       <Grid x:Name="gridTabSobre" Visibility="Collapsed" Margin="18,15,18,15">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-          <StackPanel VerticalAlignment="Top" HorizontalAlignment="Center">
+          <StackPanel VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,0,0,20">
 
+            <!-- Header -->
             <Image Source="pack://application:,,,/RM_CORE.ico" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,20,0,12" RenderOptions.BitmapScalingMode="HighQuality"/>
             <TextBlock Text="RM Core" FontSize="22" FontWeight="Bold" Foreground="#E6FFFFFF" HorizontalAlignment="Center"/>
-            <TextBlock x:Name="txtVersaoApp" Text="Versão 1.0.0" FontSize="12" Foreground="#80FFFFFF" Margin="0,4,0,0" HorizontalAlignment="Center"/>
-            <TextBlock Text="Miguel Sena" FontSize="11" Foreground="#4DA6FF" Margin="0,6,0,0" HorizontalAlignment="Center"/>
-            <TextBlock Text="github.com/senamiguel" FontSize="11" Foreground="#80FFFFFF" Margin="0,2,0,0" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="txtVersaoApp" Text="Versão 1.0.0" FontSize="11" Foreground="#80FFFFFF" HorizontalAlignment="Center"/>
+            <TextBlock Text="Central de comando para ambientes TOTVS RM" FontSize="11" Foreground="#4DA6FF" HorizontalAlignment="Center" Margin="0,6,0,0"/>
 
-            <!-- Update status (hidden by default) -->
-            <Border x:Name="bordaAtualizacao" Visibility="Collapsed" Background="#0C0078D4" BorderBrush="#1A0078D4" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,20,0,0" Width="320">
+            <!-- Card: VERSÃO -->
+            <TextBlock Text="VERSÃO" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,24,0,8" HorizontalAlignment="Left" Width="320"/>
+            <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12" Width="320" HorizontalAlignment="Center">
               <StackPanel>
-                <TextBlock x:Name="txtUpdateInfo" Text="" FontSize="12" Foreground="#E6FFFFFF" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                <Button x:Name="btnBaixarUpdate" Style="{StaticResource PremiumPrimaryButtonStyle}" Content="Baixar Atualização" Click="btnBaixarUpdate_Click" Height="36" FontSize="12"/>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="VERSÃO ATUAL" FontSize="10" Foreground="#80FFFFFF" Margin="0,0,0,2"/>
+                    <TextBlock x:Name="txtVersaoPanel" Text="v1.0.0" FontSize="20" FontWeight="Bold" Foreground="#E6FFFFFF"/>
+                  </StackPanel>
+                  <Button x:Name="btnCheckUpdate" Grid.Column="1" Width="36" Height="36" Style="{StaticResource PremiumCardButtonStyle}" ToolTip="Verificar atualizações" Click="btnCheckUpdate_Click" VerticalAlignment="Center">
+                    <Grid>
+                      <TextBlock x:Name="txtRefreshIcon" Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                  </Button>
+                </Grid>
+
+                <TextBlock x:Name="txtVersionStatus" Text="Verificando..." FontSize="12" Foreground="#80FFFFFF" Margin="0,10,0,0"/>
+
+                <!-- Update available section (hidden when up to date) -->
+                <Border x:Name="bordaNovaVersao" Visibility="Collapsed" Background="#0C10B981" BorderBrush="#1A10B981" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,12,0,0">
+                  <StackPanel>
+                    <TextBlock x:Name="txtUpdateVersion" Text="" FontSize="12" FontWeight="SemiBold" Foreground="#10B981" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                    <Button x:Name="btnBaixarUpdate" Style="{StaticResource PremiumPrimaryButtonStyle}" Content="Baixar Atualização" Click="btnBaixarUpdate_Click" Height="34" FontSize="11"/>
+                  </StackPanel>
+                </Border>
               </StackPanel>
             </Border>
 
+            <!-- Card: DESENVOLVEDOR -->
+            <TextBlock Text="DESENVOLVEDOR" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,18,0,8" HorizontalAlignment="Left" Width="320"/>
+            <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12" Width="320" HorizontalAlignment="Center">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Avatar do GitHub -->
+                <Border Width="44" Height="44" CornerRadius="22" Background="#27272A" Margin="0,0,12,0">
+                  <Image Source="https://github.com/senamiguel.png" Width="44" Height="44" RenderOptions.BitmapScalingMode="HighQuality">
+                    <Image.Clip>
+                      <EllipseGeometry Center="22,22" RadiusX="22" RadiusY="22"/>
+                    </Image.Clip>
+                  </Image>
+                </Border>
+
+                <!-- Nome + Role -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                  <TextBlock Text="Miguel Sena" FontSize="14" FontWeight="Bold" Foreground="#E6FFFFFF"/>
+                  <TextBlock Text="Desenvolvedor TOTVS RM" FontSize="11" Foreground="#80FFFFFF" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- Botão GitHub -->
+                <Button x:Name="btnGithubProfile" Grid.Column="2" Width="36" Height="36" Style="{StaticResource PremiumCardButtonStyle}"
+                        ToolTip="github.com/senamiguel" Click="btnGithubProfile_Click">
+                  <Viewbox Width="16" Height="16">
+                    <Canvas Width="24" Height="24">
+                      <Path Data="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" Fill="#E6FFFFFF"/>
+                    </Canvas>
+                  </Viewbox>
+                </Button>
+              </Grid>
+            </Border>
+
             <!-- Reconfigurar (botão pra forçar wizard) -->
-            <Button x:Name="btnReconfigurar" Content="Reconfigurar (wizard)" Click="btnReconfigurar_Click" Margin="0,20,0,0" Width="320" Height="38" HorizontalAlignment="Center"
-                    Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" Foreground="#E6FFFFFF" FontSize="12" FontWeight="SemiBold" Cursor="Hand">
+            <Button x:Name="btnReconfigurar" Content="Reconfigurar (wizard)" Click="btnReconfigurar_Click" Margin="0,20,0,0" Width="320" Height="38"
+                    Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" Foreground="#E6FFFFFF" FontSize="12" FontWeight="SemiBold">
               <Button.Template>
                 <ControlTemplate TargetType="Button">
                   <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
@@ -1231,7 +1301,7 @@
                   <ui:ToggleSwitch x:Name="tsCloseMinimizesToTray" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="True" Toggled="tsAppSetting_Toggled"/>
                 </Grid>
 
-                <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,0"/>
+                <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" />
 
                 <Grid Margin="0,8,0,8">
                   <Grid.ColumnDefinitions>
@@ -1245,7 +1315,7 @@
                   <ui:ToggleSwitch x:Name="tsStartWithWindows" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False" Toggled="tsAppSetting_Toggled"/>
                 </Grid>
 
-                <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,0"/>
+                <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" />
 
                 <Grid Margin="0,8,0,8">
                   <Grid.ColumnDefinitions>

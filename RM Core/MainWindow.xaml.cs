@@ -36,6 +36,8 @@ namespace RM_Core
 
         // Pending update info (set by background check on startup)
         private UpdateInfo? _pendingUpdate;
+        private bool _updateCheckDone = false;
+        private bool _updateCheckFailed = false;
 
         // Window state persistence path
         private readonly string _windowSettingsPath = System.IO.Path.Combine(
@@ -747,6 +749,30 @@ namespace RM_Core
 
             AddLog("info", $"Cliente \"{name}\" salvo com sucesso.");
             MessageBox.Show($"Cliente \"{name}\" salvo com sucesso!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void btnNovoPerfil_Click(object sender, RoutedEventArgs e)
+        {
+            _isSyncing = true;
+            try
+            {
+                txtNomePerfil.Text = string.Empty;
+                txtNomePerfil.Focus();
+                if (cbVersaoRM.Items.Count > 0) cbVersaoRM.SelectedIndex = 0;
+                tsAutoLogin.IsOn = false;
+                tsDeletarBroker.IsOn = false;
+                tsVerboseLogs.IsOn = true;
+                tsApagarHost.IsOn = false;
+                tsNormalizePath.IsOn = false;
+                tsEnableProcessIsolation.IsOn = false;
+                tsJobServer3Camadas.IsOn = false;
+                tsEnableCompression.IsOn = false;
+                AddLog("info", "Preparado para cadastrar novo cliente. Digite o nome e clique em Salvar.");
+            }
+            finally
+            {
+                _isSyncing = false;
+            }
         }
 
         private void btnDeletarPerfil_Click(object sender, RoutedEventArgs e)
@@ -2425,10 +2451,10 @@ namespace RM_Core
                     AtualizarStatusServicos();
                 }
 
-                // Show update banner when navigating to Sobre
-                if (rb == rbTabSobre && _pendingUpdate != null)
+                // Atualiza painel de versão ao navegar pra Sobre
+                if (rb == rbTabSobre)
                 {
-                    MostrarAtualizacaoSobre(_pendingUpdate);
+                    AtualizarPanelVersao();
                 }
             }
         }
@@ -2960,29 +2986,92 @@ namespace RM_Core
 
                 if (info != null)
                 {
-                    _pendingUpdate = info;
+                    _pendingUpdate     = info;
+                    _updateCheckFailed = false;
                     Dispatcher.Invoke(() =>
                     {
                         _trayService.ShowBalloon(
                             "Atualização disponível!",
                             $"Versão {info.Version} disponível. Acesse a aba Sobre para baixar.");
                         AddLog("info", $"[Auto-Update] Nova versão disponível: {info.Version}");
-                        // Show update banner if Sobre tab is visible
                         if (gridTabSobre.Visibility == Visibility.Visible)
-                            MostrarAtualizacaoSobre(info);
+                            AtualizarPanelVersao();
                     });
+                }
+                else
+                {
+                    _pendingUpdate     = null;
+                    _updateCheckFailed = false;
                 }
             }
             catch
             {
-                // Swallow — network not available or repo not yet public
+                _pendingUpdate     = null;
+                _updateCheckFailed = true;
+            }
+            finally
+            {
+                _updateCheckDone = true;
+                Dispatcher.Invoke(AtualizarPanelVersao);
             }
         }
 
-        private void MostrarAtualizacaoSobre(UpdateInfo info)
+        private void AtualizarPanelVersao()
         {
-            txtUpdateInfo.Text = $"Versão {info.Version} disponível!";
-            bordaAtualizacao.Visibility = Visibility.Visible;
+            if (txtVersaoPanel == null || txtVersionStatus == null) return;
+
+            txtVersaoPanel.Text = "v1.0.0";
+
+            if (_updateCheckFailed)
+            {
+                txtVersionStatus.Text = "Erro ao verificar atualizações.";
+                txtVersionStatus.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 77, 79));
+                bordaNovaVersao.Visibility = Visibility.Collapsed;
+            }
+            else if (_pendingUpdate != null)
+            {
+                txtVersionStatus.Text = "Nova versão disponível!";
+                txtVersionStatus.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129));
+                txtUpdateVersion.Text = $"v{_pendingUpdate.Version} — Baixar agora";
+                bordaNovaVersao.Visibility = Visibility.Visible;
+            }
+            else if (_updateCheckDone)
+            {
+                txtVersionStatus.Text = "Você está na versão mais recente.";
+                txtVersionStatus.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129));
+                bordaNovaVersao.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                txtVersionStatus.Text = "Verificando...";
+                txtVersionStatus.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(128, 128, 128));
+                bordaNovaVersao.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private async void btnCheckUpdate_Click(object sender, RoutedEventArgs e)
+        {
+            _updateCheckDone = false;
+            _pendingUpdate   = null;
+            _updateCheckFailed = false;
+            AtualizarPanelVersao();
+            await CheckForUpdatesAsync();
+        }
+
+        private async void btnGithubProfile_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "https://github.com/senamiguel",
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                AddLog("error", $"Erro ao abrir GitHub: {ex.Message}");
+            }
         }
 
         private void btnBaixarUpdate_Click(object sender, RoutedEventArgs e)

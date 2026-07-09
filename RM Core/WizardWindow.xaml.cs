@@ -82,17 +82,17 @@ namespace RM_Core
 
         private void btnNext_Click(object sender, RoutedEventArgs e)
         {
+            // Coleta dados ANTES de validar, pra validacao usar valores atuais
+            CollectCurrentPageData();
+
             if (_currentPage < _pages.Length - 1)
             {
-                // Validação por página
                 if (!ValidateCurrentPage()) return;
-                CollectCurrentPageData();
                 ShowPage(_currentPage + 1);
             }
             else
             {
                 // Concluir
-                CollectCurrentPageData();
                 WizardCompleted = true;
                 DialogResult = true;
                 Close();

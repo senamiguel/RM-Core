@@ -15,18 +15,18 @@ $publishDir = Join-Path $installerDir "publish_temp"
 if (Test-Path $publishDir) { Remove-Item -LiteralPath $publishDir -Recurse -Force }
 
 # Framework-dependent (Costura.Fody embedded) — ~13MB total
-$publishCmd = @(
-    "publish",
-    "`"$project`"",
-    "-c", "Release",
-    "-r", "win-x64",
-    "--self-contained", "false",
-    "-o", "`"$publishDir`"",
-    "-p:DebugType=embedded",
-    "-p:DebugSymbols=false"
-) -join " "
-Write-Host "  $publishCmd"
-Invoke-Expression $publishCmd
+$publishArgs = @(
+    'publish',
+    $project,
+    '-c', 'Release',
+    '-r', 'win-x64',
+    '--self-contained', 'false',
+    '-o', $publishDir,
+    '-p:DebugType=embedded',
+    '-p:DebugSymbols=false'
+)
+Write-Host "  dotnet $($publishArgs -join ' ')"
+& dotnet @publishArgs
 if ($LASTEXITCODE -ne 0) { throw "Falha no publish" }
 
 # Copia o RM_CORE.ico (o Costura não copia resource files)
@@ -49,7 +49,9 @@ $candidatePaths = @(
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
     "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
     "${env:LOCALAPPDATA}\Programs\Inno Setup 6\ISCC.exe",
-    "C:\Program Files\Inno Setup 6\ISCC.exe"
+    "${env:LOCALAPPDATA}\Programs\Inno Setup 7\ISCC.exe",
+    "C:\Program Files\Inno Setup 6\ISCC.exe",
+    "C:\Program Files\Inno Setup 7\ISCC.exe"
 )
 foreach ($p in $candidatePaths) {
     if ($p -and (Test-Path $p)) { $iscc = $p; break }
