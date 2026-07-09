@@ -3198,7 +3198,13 @@ namespace RM_Core
 
         private void btnNovaBase_Click(object sender, RoutedEventArgs e)
         {
-            string activeClient = cbPerfis.SelectedItem?.ToString() ?? cbClienteAtivo.SelectedItem?.ToString() ?? "Cliente Padrão";
+            string activeClient = cbPerfis.SelectedItem?.ToString()
+                                 ?? cbClienteAtivo.SelectedItem?.ToString()
+                                 ?? txtNomePerfil.Text.Trim();
+
+            if (string.IsNullOrEmpty(activeClient))
+                activeClient = "Cliente Padrão";
+
             var newAlias = new AliasConfig
             {
                 id = DateTime.Now.Ticks.ToString(),
@@ -3217,12 +3223,17 @@ namespace RM_Core
             SaveAliases();
             UpdateFilteredAliasesList();
             lstBases.SelectedItem = newAlias;
-            
-            if (cbClienteAtivo.SelectedItem != null)
+
+            string clientForUI = cbPerfis.SelectedItem?.ToString() ?? cbClienteAtivo.SelectedItem?.ToString();
+            if (!string.IsNullOrEmpty(clientForUI))
             {
-                UpdateAliasesUI(cbClienteAtivo.SelectedItem.ToString()!);
+                UpdateAliasesUI(clientForUI);
             }
-            AddLog("info", $"Novo Alias adicionado para o cliente \"{activeClient}\".");
+            else
+            {
+                UpdateFilteredAliasesList();
+            }
+            AddLog("info", $"Nova base adicionada para o cliente \"{activeClient}\".");
         }
 
         private void btnSalvarBase_Click(object sender, RoutedEventArgs e)
