@@ -69,7 +69,9 @@ namespace RM_Core
             txtStepCounter.Text  = $"{index + 1}/{_pages.Length}";
 
             btnBack.IsEnabled = index > 0 && index < _pages.Length - 1;
-            btnSkip.Visibility = (index == 0) ? Visibility.Visible : Visibility.Collapsed;
+            bool showSkip = index == 0 || index == 5;
+            btnSkip.Visibility = showSkip ? Visibility.Visible : Visibility.Collapsed;
+            btnSkip.Content = index == 5 ? "Sair sem aceitar" : "Pular configuração";
 
             if (index == _pages.Length - 1)
             {
@@ -120,19 +122,35 @@ namespace RM_Core
 
         private void btnSkip_Click(object sender, RoutedEventArgs e)
         {
-            var r = MessageBox.Show(
-                "Tem certeza que quer pular?\n\n" +
-                "O wizard vai aparecer de novo no próximo login até ser concluído.\n\n" +
-                "Lembre-se: a política de privacidade é obrigatória — você só conseguirá usar o RM Core depois de aceitá-la na página 6.",
-                "Pular configuração",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-            if (r == MessageBoxResult.Yes)
+            if (_currentPage == 0)
             {
-                WizardCompleted = false;
-                PrivacyAccepted = false;
-                DialogResult = false;
+                // Welcome → vai direto pra página de privacidade (LGPD é obrigatória)
+                CollectCurrentPageData();
+                ShowPage(5);
+                return;
+            }
+
+            if (_currentPage == 5)
+            {
+                // Privacidade → Sair sem aceitar: bloqueia
+                if (chkPrivacyAccepted.IsChecked != true)
+                {
+                    txtPrivacyWarning.Visibility = Visibility.Visible;
+                    MessageBox.Show(
+                        "Você precisa aceitar a política de privacidade para usar o RM Core.\n\n" +
+                        "Marque a caixa 'EU ACEITO E ESTOU CIENTE' para prosseguir.",
+                        "Política de privacidade obrigatória",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Aceitou na privacidade → conclui o wizard
+                CollectCurrentPageData();
+                WizardCompleted = true;
+                DialogResult = true;
                 Close();
+                return;
             }
         }
 
