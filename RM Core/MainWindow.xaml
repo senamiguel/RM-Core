@@ -454,24 +454,22 @@
                     <ColumnDefinition Width="*"/>
                   </Grid.ColumnDefinitions>
 
-                  <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                    <TextBlock Text="Deletar Broker Custom" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                    <ui:ToggleSwitch x:Name="tsLimparBrokers" OffContent="" OnContent="" MinWidth="0" Toggled="ts_Toggled" IsOn="True" HorizontalAlignment="Center"/>
+                  <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="Deletar Broker Custom" FontSize="10" FontWeight="Medium" Foreground="#E6FFFFFF" VerticalAlignment="Center"/>
+                    <ui:ToggleSwitch x:Name="tsLimparBrokers" OffContent="" OnContent="" MinWidth="0" Margin="6,0,0,0" Toggled="ts_Toggled" IsOn="True" VerticalAlignment="Center"/>
                   </StackPanel>
 
-                  <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,6">
-                      <TextBlock Text="Logs Detalhados" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF" VerticalAlignment="Center"/>
-                      <Border Background="#0078D4" CornerRadius="3" Padding="4,1" Margin="6,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="DBG" FontSize="8" FontWeight="Bold" Foreground="White"/>
-                      </Border>
-                    </StackPanel>
-                    <ui:ToggleSwitch x:Name="tsLogsDetalhados" IsOn="False" OffContent="" OnContent="" MinWidth="0" Toggled="ts_Toggled" HorizontalAlignment="Center"/>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="Logs Detalhados" FontSize="10" FontWeight="Medium" Foreground="#E6FFFFFF" VerticalAlignment="Center"/>
+                    <Border Background="#0078D4" CornerRadius="3" Padding="4,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                      <TextBlock Text="DBG" FontSize="8" FontWeight="Bold" Foreground="White"/>
+                    </Border>
+                    <ui:ToggleSwitch x:Name="tsLogsDetalhados" IsOn="False" OffContent="" OnContent="" MinWidth="0" Margin="6,0,0,0" Toggled="ts_Toggled" VerticalAlignment="Center"/>
                   </StackPanel>
 
-                  <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                    <TextBlock Text="Deletar Broker" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                    <ui:ToggleSwitch x:Name="tsDeletarBrokerDat" OffContent="" OnContent="" MinWidth="0" Toggled="ts_Toggled" IsOn="True" HorizontalAlignment="Center"/>
+                  <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="Deletar Broker" FontSize="10" FontWeight="Medium" Foreground="#E6FFFFFF" VerticalAlignment="Center"/>
+                    <ui:ToggleSwitch x:Name="tsDeletarBrokerDat" OffContent="" OnContent="" MinWidth="0" Margin="6,0,0,0" Toggled="ts_Toggled" IsOn="True" VerticalAlignment="Center"/>
                   </StackPanel>
                 </Grid>
               </Border>
@@ -1380,13 +1378,25 @@
               <StackPanel>
                 <TextBlock FontSize="11" Foreground="#80FFFFFF" TextWrapping="Wrap" Margin="0,0,0,12" Text="Cliente e base que abrem automaticamente ao iniciar. Se vazio, o app lembra do último usado."/>
 
-                <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="CLIENTE PADRÃO" Margin="0,0,0,4"/>
-                <ComboBox x:Name="cbDefaultClient" Height="32" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" Foreground="White" Margin="0,0,0,12" SelectionChanged="cbDefaultClient_SelectionChanged"/>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="*"/>
+                  </Grid.ColumnDefinitions>
 
-                <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="BASE PADRÃO" Margin="0,0,0,4"/>
-                <ComboBox x:Name="cbDefaultBase" Height="32" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" Foreground="White" Margin="0,0,0,12" SelectionChanged="cbDefaultBase_SelectionChanged"/>
+                  <StackPanel Grid.Column="0">
+                    <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="CLIENTE PADRÃO" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="cbDefaultClient" Height="32" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" Foreground="White" SelectionChanged="cbDefaultClient_SelectionChanged"/>
+                  </StackPanel>
 
-                <Button x:Name="btnLimparPadrao" Style="{StaticResource PremiumCardButtonStyle}" Content="Limpar padrão" Click="btnLimparPadrao_Click" Height="32" FontSize="11"/>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="BASE PADRÃO" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="cbDefaultBase" Height="32" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" Foreground="White" IsEnabled="False" DisplayMemberPath="name" SelectionChanged="cbDefaultBase_SelectionChanged"/>
+                  </StackPanel>
+                </Grid>
+
+                <Button x:Name="btnLimparPadrao" Style="{StaticResource PremiumCardButtonStyle}" Content="Limpar padrão" Click="btnLimparPadrao_Click" Height="32" FontSize="11" Margin="0,12,0,0"/>
               </StackPanel>
             </Border>
 

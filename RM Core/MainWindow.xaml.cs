@@ -803,8 +803,20 @@ namespace RM_Core
                 txtNomePerfil.Text = string.Empty;
                 txtNomePerfil.Focus();
                 if (cbVersaoRM.Items.Count > 0) cbVersaoRM.SelectedIndex = 0;
-                cbAliasDB.SelectedItem = null;
-                cbBase.SelectedItem = null;
+                cbAliasDB.SelectionChanged -= cbAliasDB_SelectionChanged;
+                cbBase.SelectionChanged -= cbBase_SelectionChanged;
+                try
+                {
+                    cbAliasDB.Items.Clear();
+                    cbBase.Items.Clear();
+                    cbAliasDB.SelectedItem = null;
+                    cbBase.SelectedItem = null;
+                }
+                finally
+                {
+                    cbAliasDB.SelectionChanged += cbAliasDB_SelectionChanged;
+                    cbBase.SelectionChanged += cbBase_SelectionChanged;
+                }
                 tsAutoLogin.IsOn = true;
                 tsDeletarBroker.IsOn = false;
                 tsVerboseLogs.IsOn = true;
@@ -2731,6 +2743,7 @@ namespace RM_Core
                 RefreshBaseListColorDots();
                 lstBases.Items.Refresh();
                 RefreshCbBaseColors();
+                SaveAppSettings();
             }
         }
 
@@ -2931,17 +2944,14 @@ namespace RM_Core
                     cbDefaultClient.Items.Clear();
                     foreach (var key in profiles.Keys) cbDefaultClient.Items.Add(key);
 
-                    cbDefaultBase.Items.Clear();
-                    foreach (var a in aliases) cbDefaultBase.Items.Add(a);
+                    string clientForBase = !string.IsNullOrEmpty(_appSettings.DefaultClient) && profiles.ContainsKey(_appSettings.DefaultClient)
+                        ? _appSettings.DefaultClient
+                        : string.Empty;
+
+                    PopulateDefaultBase(clientForBase, _appSettings.DefaultBaseId);
 
                     if (!string.IsNullOrEmpty(_appSettings.DefaultClient) && profiles.ContainsKey(_appSettings.DefaultClient))
                         cbDefaultClient.SelectedItem = _appSettings.DefaultClient;
-
-                    if (!string.IsNullOrEmpty(_appSettings.DefaultBaseId))
-                    {
-                        var defAlias = aliases.FirstOrDefault(a => a.id == _appSettings.DefaultBaseId);
-                        if (defAlias != null) cbDefaultBase.SelectedItem = defAlias;
-                    }
                 }
                 finally
                 {
@@ -2955,11 +2965,48 @@ namespace RM_Core
             }
         }
 
+        private void PopulateDefaultBase(string clientName, string preselectId)
+        {
+            cbDefaultBase.Items.Clear();
+
+            if (string.IsNullOrEmpty(clientName))
+            {
+                cbDefaultBase.IsEnabled = false;
+                cbDefaultBase.SelectedItem = null;
+                return;
+            }
+
+            var clientAliases = aliases.Where(a => a.client.Equals(clientName, StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (var a in clientAliases) cbDefaultBase.Items.Add(a);
+
+            cbDefaultBase.IsEnabled = clientAliases.Count > 0;
+
+            if (!string.IsNullOrEmpty(preselectId))
+            {
+                var defAlias = clientAliases.FirstOrDefault(a => a.id == preselectId);
+                if (defAlias != null) cbDefaultBase.SelectedItem = defAlias;
+            }
+        }
+
         private void cbDefaultClient_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isSyncing) return;
             string selected = cbDefaultClient.SelectedItem?.ToString() ?? string.Empty;
+            string prevBaseId = _appSettings.DefaultBaseId;
             _appSettings.DefaultClient = selected;
+
+            if (string.IsNullOrEmpty(selected))
+            {
+                _appSettings.DefaultBaseId = string.Empty;
+            }
+            else
+            {
+                var existing = !string.IsNullOrEmpty(prevBaseId) ? aliases.FirstOrDefault(a => a.id == prevBaseId) : null;
+                if (existing == null || !existing.client.Equals(selected, StringComparison.OrdinalIgnoreCase))
+                    _appSettings.DefaultBaseId = string.Empty;
+            }
+
+            PopulateDefaultBase(selected, _appSettings.DefaultBaseId);
             SaveAppSettings();
             UpdateDefaultIconOnSelectedClient();
             AddLog("info", string.IsNullOrEmpty(selected) ? "Cliente padrão removido." : $"Cliente padrão: {selected}");
