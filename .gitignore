@@ -21,12 +21,10 @@ installer/publish_temp/
 installer/stage/
 
 # =============================================================
-#  Documentação local (privada, não vai pro repo)
+#  Documentação interna (não vai pro repo público)
 # =============================================================
-*.md
 PLAN.md
 TODO.md
-README.md
 
 # =============================================================
 #  OS
