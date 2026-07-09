@@ -54,8 +54,33 @@ namespace RM_Core
 
         public bool IsExiting { get; set; } = false;
 
+        private void ProcessPendingDeletes()
+        {
+            try
+            {
+                string appData = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
+                    "RM_Core");
+                string flagPath = System.IO.Path.Combine(appData, "rmcore.delete_on_startup");
+                if (!System.IO.File.Exists(flagPath)) return;
+
+                var paths = System.IO.File.ReadAllLines(flagPath);
+                foreach (var p in paths)
+                {
+                    try
+                    {
+                        if (System.IO.File.Exists(p)) System.IO.File.Delete(p);
+                    }
+                    catch { /* ignore */ }
+                }
+                try { System.IO.File.Delete(flagPath); } catch { /* ignore */ }
+            }
+            catch { /* ignore */ }
+        }
+
         public MainWindow()
         {
+            ProcessPendingDeletes();
             InitializeComponent();
             listLogs.ItemsSource = logs;
             logs.CollectionChanged += Logs_CollectionChanged;
@@ -3776,19 +3801,43 @@ namespace RM_Core
                     "profiles.json", "aliases.json"
                 };
 
+                var failedFiles = new List<string>();
                 foreach (var file in filesToDelete)
                 {
                     string path = Path.Combine(appData, file);
-                    if (File.Exists(path))
+                    if (!File.Exists(path)) continue;
+                    try
                     {
                         File.Delete(path);
                         AddLog("info", $"Arquivo removido: {file}");
                     }
+                    catch
+                    {
+                        failedFiles.Add(path);
+                    }
                 }
 
-                AddLog("info", "Dados resetados com sucesso.");
-                MessageBox.Show("Dados resetados. Reinicie o aplicativo.", "Reset de Fabrica", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (failedFiles.Count > 0)
+                {
+                    string pendingFlag = Path.Combine(appData, "rmcore.delete_on_startup");
+                    try
+                    {
+                        File.WriteAllLines(pendingFlag, failedFiles);
+                        AddLog("warn", $"{failedFiles.Count} arquivo(s) marcados para remocao no proximo inicio.");
+                    }
+                    catch (Exception ex)
+                    {
+                        AddLog("error", $"Nao foi possivel agendar limpeza: {ex.Message}");
+                    }
+                }
 
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                AddLog("info", "Dados resetados com sucesso.");
+                MessageBox.Show("Dados resetados. O aplicativo sera reiniciado.", "Reset de Fabrica", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                System.Diagnostics.Process.Start(Application.ResourceAssembly.Location);
                 Application.Current.Shutdown();
             }
             catch (Exception ex)
