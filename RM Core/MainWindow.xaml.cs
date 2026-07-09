@@ -589,12 +589,9 @@ namespace RM_Core
             cbPerfis.SelectionChanged += cbPerfis_SelectionChanged;
             cbClienteAtivo.SelectionChanged += cbClienteAtivo_SelectionChanged;
 
-            RefreshFavoritosSection();
-
-            if (cbPerfis.Items.Count > 0)
-            {
-                cbPerfis.SelectedIndex = 0;
-            }
+            UpdateDefaultIconOnSelectedClient();
+            ApplyDefaultOrLast();
+            RefreshDefaultSelectors();
         }
 
         private void LoadProfileToUI(ProfileSettings profile)
@@ -626,8 +623,8 @@ namespace RM_Core
                 // Dynamically update and filter bases for this client!
                 UpdateAliasesUI(profile.Name);
 
-                // Sync favorite icon
-                UpdateFavoritoIcon(profile.IsFavorite);
+                // Sync default icon
+                UpdateFavoritoIcon(!string.IsNullOrEmpty(_appSettings.DefaultClient) && _appSettings.DefaultClient == profile.Name);
 
                 // Set selected base
                 cbAliasDB.SelectedItem = profile.Alias;
@@ -649,7 +646,7 @@ namespace RM_Core
                 cbPerfis.SelectedItem = selectedName;
                 LoadProfileToUI(profile);
                 UpdateFilteredAliasesList();
-                RefreshFavoritosSection();
+
                 AddLog("info", $"Cliente \"{selectedName}\" carregado via Início.");
             }
         }
@@ -663,7 +660,14 @@ namespace RM_Core
                 cbClienteAtivo.SelectedItem = selectedName;
                 LoadProfileToUI(profile);
                 UpdateFilteredAliasesList();
-                RefreshFavoritosSection();
+                UpdateDefaultIconOnSelectedClient();
+
+                if (_appSettings.LastClient != selectedName)
+                {
+                    _appSettings.LastClient = selectedName;
+                    SaveAppSettings();
+                }
+
                 AddLog("info", $"Cliente \"{selectedName}\" selecionado.");
             }
         }
@@ -676,7 +680,13 @@ namespace RM_Core
             {
                 string selectedBase = (cbBase.SelectedItem is AliasConfig aliasCfg) ? aliasCfg.name : (cbBase.SelectedItem?.ToString() ?? string.Empty);
                 cbAliasDB.SelectedItem = selectedBase;
-                
+
+                if (cbBase.SelectedItem is AliasConfig alias && alias.id != _appSettings.LastBaseId)
+                {
+                    _appSettings.LastBaseId = alias.id;
+                    SaveAppSettings();
+                }
+
                 // Update active client model settings
                 if (cbClienteAtivo.SelectedItem != null)
                 {
@@ -765,7 +775,7 @@ namespace RM_Core
             cbClienteAtivo.SelectionChanged += cbClienteAtivo_SelectionChanged;
 
             UpdateFilteredAliasesList();
-            RefreshFavoritosSection();
+
 
             AddLog("info", $"Cliente \"{name}\" salvo com sucesso.");
             MessageBox.Show($"Cliente \"{name}\" salvo com sucesso!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -833,7 +843,7 @@ namespace RM_Core
 
             UpdateProfilesUI();
             UpdateFilteredAliasesList();
-            RefreshFavoritosSection();
+
             
             cbClienteAtivo.SelectionChanged -= cbClienteAtivo_SelectionChanged;
             cbClienteAtivo.Items.Clear();
@@ -2375,7 +2385,7 @@ namespace RM_Core
             SaveAliases();
             UpdateProfilesUI();
             UpdateFilteredAliasesList();
-            RefreshFavoritosSection();
+
 
             if (profiles.TryGetValue(wiz.ClientName, out var p))
             {
@@ -2494,6 +2504,12 @@ namespace RM_Core
                 if (_appSettings.BaseTagColors.TryGetValue(alias.id, out var color))
                     alias.TagColor = color;
             }
+
+            // Migrate legacy favorites (first one) to the new single-default system
+            if (string.IsNullOrEmpty(_appSettings.DefaultClient) && _appSettings.FavoriteClientNames.Count > 0)
+                _appSettings.DefaultClient = _appSettings.FavoriteClientNames[0];
+            if (string.IsNullOrEmpty(_appSettings.DefaultBaseId) && _appSettings.BaseFavoriteIds.Count > 0)
+                _appSettings.DefaultBaseId = _appSettings.BaseFavoriteIds[0];
 
             // Sincroniza os toggles da aba Sobre com o que está persistido
             _isSyncing = true;
@@ -2788,79 +2804,6 @@ namespace RM_Core
         }
 
         // ---------------------------------------------------------------
-        // Feature 4: Favorite clients on Home
-        // ---------------------------------------------------------------
-        private void RefreshFavoritosSection()
-        {
-            var favs = profiles.Values.Where(p => p.IsFavorite).ToList();
-            if (favs.Count > 0)
-            {
-                panelFavoritos.Visibility = Visibility.Visible;
-                listFavoritos.ItemsSource = null;
-                listFavoritos.ItemsSource = favs;
-            }
-            else
-            {
-                panelFavoritos.Visibility = Visibility.Collapsed;
-            }
-
-            var favsBases = aliases.Where(a => a.IsFavorite).ToList();
-            if (favsBases.Count > 0)
-            {
-                panelBasesFavoritas.Visibility = Visibility.Visible;
-                listBasesFavoritas.ItemsSource = null;
-                listBasesFavoritas.ItemsSource = favsBases;
-            }
-            else
-            {
-                panelBasesFavoritas.Visibility = Visibility.Collapsed;
-            }
-        }
-
-        private void btnFavoritoIniciar_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.Tag is string clientName)
-            {
-                if (profiles.TryGetValue(clientName, out var profile))
-                {
-                    cbPerfis.SelectedItem = clientName;
-                    cbClienteAtivo.SelectedItem = clientName;
-                    LoadProfileToUI(profile);
-                    _ = IniciarRMPlusHostAsync();
-                }
-            }
-        }
-
-        private void btnFavoritoBaseIniciar_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.Tag is string aliasId)
-            {
-                var alias = aliases.FirstOrDefault(a => a.id == aliasId);
-                if (alias == null) return;
-
-                if (profiles.TryGetValue(alias.client, out var profile))
-                {
-                    cbPerfis.SelectedItem = alias.client;
-                    cbClienteAtivo.SelectedItem = alias.client;
-                    LoadProfileToUI(profile);
-                }
-
-                _isSyncing = true;
-                try
-                {
-                    cbBase.SelectedItem = alias;
-                    cbAliasDB.SelectedItem = alias.name;
-                }
-                finally
-                {
-                    _isSyncing = false;
-                }
-
-                _ = IniciarRMPlusHostAsync();
-            }
-        }
-
-        // ---------------------------------------------------------------
         // Feature 5: Toggle password visibility
         // ---------------------------------------------------------------
         private void btnTogglePass_Click(object sender, RoutedEventArgs e)
@@ -2906,7 +2849,7 @@ namespace RM_Core
         }
 
         // ---------------------------------------------------------------
-        // Feature 1: Favorite toggle
+        // Default client / default base (single, persisted)
         // ---------------------------------------------------------------
         private void btnToggleFavorito_Click(object sender, RoutedEventArgs e)
         {
@@ -2914,39 +2857,193 @@ namespace RM_Core
             if (string.IsNullOrEmpty(name)) return;
             if (!profiles.TryGetValue(name, out var profile))
             {
-                // If the name changed, find by selected item
                 string selected = cbPerfis.SelectedItem?.ToString() ?? string.Empty;
                 if (!profiles.TryGetValue(selected, out profile)) return;
             }
-            profile.IsFavorite = !profile.IsFavorite;
-            UpdateFavoritoIcon(profile.IsFavorite);
-            RefreshFavoritosSection();
+
+            if (_appSettings.DefaultClient == profile.Name)
+            {
+                _appSettings.DefaultClient = string.Empty;
+                AddLog("info", $"Cliente \"{profile.Name}\" removido do padrão.");
+            }
+            else
+            {
+                _appSettings.DefaultClient = profile.Name;
+                AddLog("info", $"Cliente \"{profile.Name}\" definido como padrão.");
+            }
+            UpdateFavoritoIcon(!string.IsNullOrEmpty(_appSettings.DefaultClient) && _appSettings.DefaultClient == profile.Name);
             SaveAppSettings();
-            AddLog("info", $"Cliente \"{profile.Name}\" {(profile.IsFavorite ? "marcado como favorito" : "removido dos favoritos")}.");
         }
 
         private void btnToggleBaseFavorito_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.DataContext is AliasConfig alias)
             {
-                alias.IsFavorite = !alias.IsFavorite;
+                if (_appSettings.DefaultBaseId == alias.id)
+                {
+                    _appSettings.DefaultBaseId = string.Empty;
+                    AddLog("info", $"Base \"{alias.name}\" removida do padrão.");
+                }
+                else
+                {
+                    _appSettings.DefaultBaseId = alias.id;
+                    AddLog("info", $"Base \"{alias.name}\" definida como padrão.");
+                }
                 SaveAppSettings();
                 lstBases.Items.Refresh();
                 RefreshCbBaseColors();
             }
         }
 
-        private void UpdateFavoritoIcon(bool isFavorite)
+        private void UpdateFavoritoIcon(bool isDefault)
         {
-            if (isFavorite)
+            if (isDefault)
             {
-                iconFavorito.Text = "\uE734";
+                iconFavorito.Text = "\uE735";
                 iconFavorito.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 193, 7));
+                iconFavorito.Opacity = 1.0;
             }
             else
             {
-                iconFavorito.Text = "\uE735";
+                iconFavorito.Text = "\uE734";
                 iconFavorito.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(128, 128, 128));
+                iconFavorito.Opacity = 0.7;
+            }
+        }
+
+        private void UpdateDefaultIconOnSelectedClient()
+        {
+            string selected = cbPerfis.SelectedItem?.ToString() ?? string.Empty;
+            UpdateFavoritoIcon(!string.IsNullOrEmpty(selected) && selected == _appSettings.DefaultClient);
+        }
+
+        private void RefreshDefaultSelectors()
+        {
+            if (cbDefaultClient == null || cbDefaultBase == null) return;
+
+            _isSyncing = true;
+            try
+            {
+                cbDefaultClient.SelectionChanged -= cbDefaultClient_SelectionChanged;
+                cbDefaultBase.SelectionChanged -= cbDefaultBase_SelectionChanged;
+                try
+                {
+                    cbDefaultClient.Items.Clear();
+                    foreach (var key in profiles.Keys) cbDefaultClient.Items.Add(key);
+
+                    cbDefaultBase.Items.Clear();
+                    foreach (var a in aliases) cbDefaultBase.Items.Add(a);
+
+                    if (!string.IsNullOrEmpty(_appSettings.DefaultClient) && profiles.ContainsKey(_appSettings.DefaultClient))
+                        cbDefaultClient.SelectedItem = _appSettings.DefaultClient;
+
+                    if (!string.IsNullOrEmpty(_appSettings.DefaultBaseId))
+                    {
+                        var defAlias = aliases.FirstOrDefault(a => a.id == _appSettings.DefaultBaseId);
+                        if (defAlias != null) cbDefaultBase.SelectedItem = defAlias;
+                    }
+                }
+                finally
+                {
+                    cbDefaultClient.SelectionChanged += cbDefaultClient_SelectionChanged;
+                    cbDefaultBase.SelectionChanged += cbDefaultBase_SelectionChanged;
+                }
+            }
+            finally
+            {
+                _isSyncing = false;
+            }
+        }
+
+        private void cbDefaultClient_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isSyncing) return;
+            string selected = cbDefaultClient.SelectedItem?.ToString() ?? string.Empty;
+            _appSettings.DefaultClient = selected;
+            SaveAppSettings();
+            UpdateDefaultIconOnSelectedClient();
+            AddLog("info", string.IsNullOrEmpty(selected) ? "Cliente padrão removido." : $"Cliente padrão: {selected}");
+        }
+
+        private void cbDefaultBase_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isSyncing) return;
+            if (cbDefaultBase.SelectedItem is AliasConfig alias)
+            {
+                _appSettings.DefaultBaseId = alias.id;
+                SaveAppSettings();
+                AddLog("info", $"Base padrão: {alias.name}");
+            }
+        }
+
+        private void btnLimparPadrao_Click(object sender, RoutedEventArgs e)
+        {
+            _appSettings.DefaultClient = string.Empty;
+            _appSettings.DefaultBaseId = string.Empty;
+            SaveAppSettings();
+            RefreshDefaultSelectors();
+            UpdateDefaultIconOnSelectedClient();
+            AddLog("info", "Padrão removido. O app vai abrir no último usado.");
+        }
+
+        // ---------------------------------------------------------------
+        // Apply Default (or Last) client+base on startup
+        // ---------------------------------------------------------------
+        private void ApplyDefaultOrLast()
+        {
+            if (profiles.Count == 0) return;
+
+            string clientToLoad = !string.IsNullOrEmpty(_appSettings.DefaultClient) && profiles.ContainsKey(_appSettings.DefaultClient)
+                ? _appSettings.DefaultClient
+                : (!string.IsNullOrEmpty(_appSettings.LastClient) && profiles.ContainsKey(_appSettings.LastClient)
+                    ? _appSettings.LastClient
+                    : profiles.Keys.FirstOrDefault() ?? string.Empty);
+
+            if (string.IsNullOrEmpty(clientToLoad)) return;
+
+            cbPerfis.SelectionChanged -= cbPerfis_SelectionChanged;
+            cbClienteAtivo.SelectionChanged -= cbClienteAtivo_SelectionChanged;
+            try
+            {
+                cbPerfis.SelectedItem = clientToLoad;
+                cbClienteAtivo.SelectedItem = clientToLoad;
+            }
+            finally
+            {
+                cbPerfis.SelectionChanged += cbPerfis_SelectionChanged;
+                cbClienteAtivo.SelectionChanged += cbClienteAtivo_SelectionChanged;
+            }
+
+            if (profiles.TryGetValue(clientToLoad, out var profile))
+            {
+                LoadProfileToUI(profile);
+            }
+
+            // Apply base: default > last > profile.Alias
+            string baseIdToLoad = !string.IsNullOrEmpty(_appSettings.DefaultBaseId) && aliases.Any(a => a.id == _appSettings.DefaultBaseId)
+                ? _appSettings.DefaultBaseId
+                : (!string.IsNullOrEmpty(_appSettings.LastBaseId) && aliases.Any(a => a.id == _appSettings.LastBaseId)
+                    ? _appSettings.LastBaseId
+                    : string.Empty);
+
+            if (!string.IsNullOrEmpty(baseIdToLoad))
+            {
+                var alias = aliases.FirstOrDefault(a => a.id == baseIdToLoad);
+                if (alias != null)
+                {
+                    cbBase.SelectionChanged -= cbBase_SelectionChanged;
+                    cbAliasDB.SelectionChanged -= cbAliasDB_SelectionChanged;
+                    try
+                    {
+                        cbBase.SelectedItem = alias;
+                        cbAliasDB.SelectedItem = alias.name;
+                    }
+                    finally
+                    {
+                        cbBase.SelectionChanged += cbBase_SelectionChanged;
+                        cbAliasDB.SelectionChanged += cbAliasDB_SelectionChanged;
+                    }
+                }
             }
         }
 
@@ -3781,6 +3878,10 @@ namespace RM_Core
         public List<string> FavoriteClientNames { get; set; } = new();
         public List<string> BaseFavoriteIds { get; set; } = new();
         public Dictionary<string, string> BaseTagColors { get; set; } = new();
+        public string DefaultClient  { get; set; } = string.Empty;
+        public string DefaultBaseId  { get; set; } = string.Empty;
+        public string LastClient     { get; set; } = string.Empty;
+        public string LastBaseId     { get; set; } = string.Empty;
     }
 
     public class LogEntry

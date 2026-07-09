@@ -447,19 +447,25 @@
             <StackPanel>
               <TextBlock Text="QUICK SETTINGS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,8"/>
               <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12">
-                <Grid>
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                  </Grid.ColumnDefinitions>
+                <StackPanel>
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*"/>
+                      <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                  <StackPanel Grid.Column="0" HorizontalAlignment="Center" Margin="0,0,0,0">
-                    <TextBlock Text="Deletar Broker Custom" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                    <ui:ToggleSwitch x:Name="tsLimparBrokers" OffContent="" OnContent="" MinWidth="0" Toggled="ts_Toggled" IsOn="True" HorizontalAlignment="Center"/>
-                  </StackPanel>
+                    <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                      <TextBlock Text="Deletar Broker Custom" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                      <ui:ToggleSwitch x:Name="tsLimparBrokers" OffContent="" OnContent="" MinWidth="0" Toggled="ts_Toggled" IsOn="True" HorizontalAlignment="Center"/>
+                    </StackPanel>
 
-                  <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                      <TextBlock Text="Deletar Broker" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                      <ui:ToggleSwitch x:Name="tsDeletarBrokerDat" OffContent="" OnContent="" MinWidth="0" Toggled="ts_Toggled" IsOn="True" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                  </Grid>
+
+                  <StackPanel HorizontalAlignment="Center" Margin="0,12,0,0">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,6">
                       <TextBlock Text="Logs Detalhados" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF" VerticalAlignment="Center"/>
                       <Border Background="#0078D4" CornerRadius="3" Padding="4,1" Margin="6,0,0,0" VerticalAlignment="Center">
@@ -468,12 +474,7 @@
                     </StackPanel>
                     <ui:ToggleSwitch x:Name="tsLogsDetalhados" IsOn="False" OffContent="" OnContent="" MinWidth="0" Toggled="ts_Toggled" HorizontalAlignment="Center"/>
                   </StackPanel>
-
-                  <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                    <TextBlock Text="Deletar Broker" FontSize="11" FontWeight="Medium" Foreground="#E6FFFFFF" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                    <ui:ToggleSwitch x:Name="tsDeletarBrokerDat" OffContent="" OnContent="" MinWidth="0" Toggled="ts_Toggled" IsOn="True" HorizontalAlignment="Center"/>
-                  </StackPanel>
-                </Grid>
+                </StackPanel>
               </Border>
             </StackPanel>
 
@@ -692,75 +693,7 @@
             </Grid>
           </StackPanel>
 
-          <!-- 6. CLIENTES FAVORITOS -->
-          <StackPanel x:Name="panelFavoritos" Visibility="Collapsed">
-            <TextBlock Text="CLIENTES FAVORITOS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,8"/>
-            <ItemsControl x:Name="listFavoritos">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <WrapPanel Orientation="Horizontal"/>
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,0,6,6" Width="175">
-                    <StackPanel>
-                      <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                        <TextBlock Text="&#xE735;" FontFamily="Segoe MDL2 Assets" FontSize="11" Foreground="#FFD700" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <TextBlock Text="{Binding Name}" FontSize="11" FontWeight="SemiBold" Foreground="#E6FFFFFF" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                      </StackPanel>
-                      <TextBlock Text="{Binding Alias}" FontSize="10" Foreground="#80FFFFFF" Margin="0,0,0,6" TextTrimming="CharacterEllipsis"/>
-                      <Button Content="Ativar" Tag="{Binding Name}" Click="btnFavoritoIniciar_Click" Height="26" FontSize="10" FontWeight="SemiBold" Background="#0078D4" Foreground="White" BorderThickness="0" Cursor="Hand">
-                        <Button.Template>
-                          <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="6,2">
-                              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                          </ControlTemplate>
-                        </Button.Template>
-                      </Button>
-                    </StackPanel>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
-
-          <!-- 6b. BASES FAVORITAS -->
-          <StackPanel x:Name="panelBasesFavoritas" Visibility="Collapsed">
-            <TextBlock Text="BASES FAVORITAS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,8"/>
-            <ItemsControl x:Name="listBasesFavoritas">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <WrapPanel Orientation="Horizontal"/>
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,0,6,6" Width="175">
-                    <StackPanel>
-                      <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                        <Ellipse Width="9" Height="9" Fill="{Binding TagColor, Converter={StaticResource TagColorConverter}}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBlock Text="{Binding name}" FontSize="11" FontWeight="SemiBold" Foreground="#E6FFFFFF" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                      </StackPanel>
-                      <TextBlock FontSize="10" Foreground="#80FFFFFF" Margin="0,0,0,6" TextTrimming="CharacterEllipsis">
-                        <Run Text="Cliente: "/><Run Text="{Binding client}"/>
-                      </TextBlock>
-                      <Button Content="Iniciar" Tag="{Binding id}" Click="btnFavoritoBaseIniciar_Click" Height="26" FontSize="10" FontWeight="SemiBold" Background="#10B981" Foreground="White" BorderThickness="0" Cursor="Hand">
-                        <Button.Template>
-                          <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="6,2">
-                              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                          </ControlTemplate>
-                        </Button.Template>
-                      </Button>
-                    </StackPanel>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
+          <!-- 6. (removido: clientes/bases favoritas — agora configurado em Sobre) -->
 
           <!-- 7. STATUS DOS SERVIÇOS -->
           <StackPanel>
@@ -964,7 +897,7 @@
                           <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="NOME DO CLIENTE"/>
-                        <Button x:Name="btnToggleFavorito" Grid.Column="1" Width="22" Height="22" Background="Transparent" BorderThickness="0" Click="btnToggleFavorito_Click" ToolTip="Marcar como favorito" VerticalAlignment="Bottom">
+                        <Button x:Name="btnToggleFavorito" Grid.Column="1" Width="22" Height="22" Background="Transparent" BorderThickness="0" Click="btnToggleFavorito_Click" ToolTip="Definir como cliente padr�o" VerticalAlignment="Bottom">
                           <TextBlock x:Name="iconFavorito" Text="&#xE735;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF"/>
                         </Button>
                       </Grid>
@@ -1186,7 +1119,7 @@
                         </Grid.ColumnDefinitions>
                         <Ellipse x:Name="colorDot" Width="10" Height="10" Fill="Transparent" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <TextBlock Grid.Column="1" Text="{Binding name}" VerticalAlignment="Center" Foreground="#E6FFFFFF"/>
-                        <Button Grid.Column="2" Width="18" Height="18" Background="Transparent" BorderThickness="0" Click="btnToggleBaseFavorito_Click" ToolTip="Favoritar base" VerticalAlignment="Center">
+                        <Button Grid.Column="2" Width="18" Height="18" Background="Transparent" BorderThickness="0" Click="btnToggleBaseFavorito_Click" ToolTip="Definir como base padr�o" VerticalAlignment="Center">
                           <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#FFC107" VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock.Style>
                               <Style TargetType="TextBlock">
@@ -1441,6 +1374,22 @@
                 </ControlTemplate>
               </Button.Template>
             </Button>
+
+            <!-- Card: PADRÃO (cliente e base que iniciam automaticamente) -->
+            <TextBlock Text="PADRÃO" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,24,0,8" HorizontalAlignment="Left" Width="320"/>
+            <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12" Width="320" HorizontalAlignment="Center">
+              <StackPanel>
+                <TextBlock FontSize="11" Foreground="#80FFFFFF" TextWrapping="Wrap" Margin="0,0,0,12" Text="Cliente e base que abrem automaticamente ao iniciar. Se vazio, o app lembra do último usado."/>
+
+                <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="CLIENTE PADRÃO" Margin="0,0,0,4"/>
+                <ComboBox x:Name="cbDefaultClient" Height="32" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" Foreground="White" Margin="0,0,0,12" SelectionChanged="cbDefaultClient_SelectionChanged"/>
+
+                <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="BASE PADRÃO" Margin="0,0,0,4"/>
+                <ComboBox x:Name="cbDefaultBase" Height="32" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" Foreground="White" Margin="0,0,0,12" SelectionChanged="cbDefaultBase_SelectionChanged"/>
+
+                <Button x:Name="btnLimparPadrao" Style="{StaticResource PremiumCardButtonStyle}" Content="Limpar padrão" Click="btnLimparPadrao_Click" Height="32" FontSize="11"/>
+              </StackPanel>
+            </Border>
 
             <!-- Configurações -->
             <TextBlock Text="CONFIGURAÇÕES" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,24,0,8" HorizontalAlignment="Left" Width="320"/>
