@@ -418,7 +418,20 @@
                 <ColumnDefinition Width="6" />
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
-              <ComboBox x:Name="cbBase" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" SelectionChanged="cbBase_SelectionChanged"/>
+              <ComboBox x:Name="cbBase" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" SelectionChanged="cbBase_SelectionChanged">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                      </Grid.ColumnDefinitions>
+                      <Ellipse Width="10" Height="10" Fill="Transparent" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                      <TextBlock Grid.Column="1" Text="{Binding name}" VerticalAlignment="Center"/>
+                    </Grid>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
               <Button x:Name="btnEditarBaseHome" Grid.Column="2" Width="34" Height="34" Style="{StaticResource PremiumCardButtonStyle}" ToolTip="Editar base selecionada" Click="btnEditarBaseHome_Click">
                 <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
               </Button>
@@ -631,6 +644,8 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="12" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="12" />
+                <RowDefinition Height="Auto" />
               </Grid.RowDefinitions>
 
               <!-- Reiniciar IIS -->
@@ -672,10 +687,50 @@
                   <TextBlock Text="LIMPA O CACHE" FontSize="8" Foreground="#80FFFFFF" Margin="0,2,0,0"/>
                 </StackPanel>
               </Button>
+
+              <!-- Executar SQL -->
+              <Button x:Name="btnExecutarSql" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Height="82" HorizontalContentAlignment="Left"
+                      Style="{StaticResource PremiumCardButtonStyle}" Click="btnExecutarSql_Click" HorizontalAlignment="Stretch">
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="&#xE756;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#E6FFFFFF" Margin="0,0,0,6"/>
+                  <TextBlock Text="Executar SQL" FontSize="12" FontWeight="Bold" Foreground="#E6FFFFFF"/>
+                  <TextBlock Text="CONSULTAS SELECT" FontSize="8" Foreground="#80FFFFFF" Margin="0,2,0,0"/>
+                </StackPanel>
+              </Button>
             </Grid>
           </StackPanel>
 
-          <!-- 6. STATUS DOS SERVIÇOS -->
+          <!-- 6. CLIENTES FAVORITOS -->
+          <StackPanel x:Name="panelFavoritos" Visibility="Collapsed">
+            <TextBlock Text="CLIENTES FAVORITOS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,8"/>
+            <ItemsControl x:Name="listFavoritos">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" ItemWidth="33%"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="8,8" Margin="0,0,6,6">
+                    <StackPanel>
+                      <TextBlock Text="{Binding Name}" FontSize="11" FontWeight="SemiBold" Foreground="#E6FFFFFF" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,6"/>
+                      <Button Content="Iniciar" Tag="{Binding Name}" Click="btnFavoritoIniciar_Click" Height="28" FontSize="10" FontWeight="SemiBold" Background="#0078D4" Foreground="White" BorderThickness="0">
+                        <Button.Template>
+                          <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="6,2">
+                              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                          </ControlTemplate>
+                        </Button.Template>
+                      </Button>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <!-- 7. STATUS DOS SERVIÇOS -->
           <StackPanel>
             <Grid Margin="0,0,0,8">
               <Grid.ColumnDefinitions>
@@ -721,6 +776,7 @@
       <Grid x:Name="gridTabLogs" Visibility="Collapsed" Margin="18,15,18,15">
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
           <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -750,8 +806,24 @@
           </StackPanel>
         </Grid>
 
+        <!-- Search bar -->
+        <Border Grid.Row="1" Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="8,0,8,0" Margin="0,0,0,10" Height="36">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF" VerticalAlignment="Center" Margin="4,0,8,0"/>
+            <TextBox x:Name="txtFiltrarLogs" Grid.Column="1" Background="Transparent" BorderThickness="0" Foreground="White" VerticalContentAlignment="Center" CaretBrush="White" TextChanged="txtFiltrarLogs_TextChanged"/>
+            <Button x:Name="btnLimparFiltroLogs" Grid.Column="2" Width="28" Height="28" Background="Transparent" BorderThickness="0" Foreground="#80FFFFFF" Click="btnLimparFiltroLogs_Click" Visibility="Collapsed">
+              <TextBlock Text="&#xE894;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+            </Button>
+          </Grid>
+        </Border>
+
         <!-- Logs Container -->
-        <Border Grid.Row="1" Background="#000000" BorderBrush="#333333" BorderThickness="1" CornerRadius="12" Padding="15">
+        <Border Grid.Row="2" Background="#000000" BorderBrush="#333333" BorderThickness="1" CornerRadius="12" Padding="15">
           <Grid>
             <!-- Empty state -->
             <TextBlock x:Name="txtNenhumLog" Text="Nenhum log disponível." FontStyle="Italic" Foreground="#666666" 
@@ -806,6 +878,8 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="6" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
 
               <!-- Profile ComboBox -->
@@ -835,8 +909,15 @@
                 <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
               </Button>
 
+              <!-- Exportar Cliente Button -->
+              <Button x:Name="btnExportarCliente" Grid.Column="8" Width="36" Height="36" Margin="0,17,0,0"
+                      Style="{StaticResource PremiumCardButtonStyle}"
+                      ToolTip="Exportar este cliente" Click="btnExportarCliente_Click">
+                <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Button>
+
               <!-- Importar Ambientes Button -->
-              <Button x:Name="btnImportarAmbientes" Grid.Column="8" Width="36" Height="36" Margin="0,17,0,0"
+              <Button x:Name="btnImportarAmbientes" Grid.Column="10" Width="36" Height="36" Margin="0,17,0,0"
                       Style="{StaticResource PremiumCardButtonStyle}"
                       ToolTip="Importar Ambientes" Click="btnImportarAmbientes_Click">
                 <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -851,11 +932,20 @@
               <!-- 2. PROFILE FIELDS -->
               <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12">
                 <ikw:SimpleStackPanel Spacing="12">
-                  <!-- Nome do Perfil -->
-                  <StackPanel>
-                    <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="NOME DO CLIENTE"/>
-                    <TextBox x:Name="txtNomePerfil" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" Padding="6,0,6,0" VerticalContentAlignment="Center" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" CaretBrush="White"/>
-                  </StackPanel>
+                    <!-- Nome do Perfil -->
+                    <StackPanel>
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="NOME DO CLIENTE"/>
+                        <Button x:Name="btnToggleFavorito" Grid.Column="1" Width="22" Height="22" Background="Transparent" BorderThickness="0" Click="btnToggleFavorito_Click" ToolTip="Marcar como favorito" VerticalAlignment="Bottom">
+                          <TextBlock x:Name="iconFavorito" Text="&#xE1CE;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF"/>
+                        </Button>
+                      </Grid>
+                      <TextBox x:Name="txtNomePerfil" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" Padding="6,0,6,0" VerticalContentAlignment="Center" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" CaretBrush="White"/>
+                    </StackPanel>
 
                   <Grid>
                     <Grid.ColumnDefinitions>
@@ -1048,19 +1138,38 @@
               
               <!-- Connection List Section -->
               <TextBlock Text="CONEXÕES ATIVAS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,8"/>
+              <TextBox x:Name="txtSearchBase" Height="30" ui:ControlHelper.CornerRadius="6" ui:ControlHelper.PlaceholderText="Pesquisar base..." Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" Margin="0,0,0,6" TextChanged="txtSearchBase_TextChanged"/>
               <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Margin="0,0,0,10" ClipToBounds="True">
                 <ListBox x:Name="lstBases" Height="140" Background="Transparent" BorderThickness="0" 
-                         SelectionChanged="lstBases_SelectionChanged" DisplayMemberPath="name"/>
+                         SelectionChanged="lstBases_SelectionChanged">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <Grid Margin="2,2,2,2">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="Auto" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Ellipse x:Name="colorDot" Width="10" Height="10" Fill="Transparent" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock Grid.Column="1" Text="{Binding name}" VerticalAlignment="Center" Foreground="#E6FFFFFF"/>
+                      </Grid>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
               </Border>
               
               <Grid Margin="0,0,0,16">
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="8" />
+                  <ColumnDefinition Width="6" />
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="6" />
                   <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Button x:Name="btnNovaBase" Grid.Column="0" Style="{StaticResource PremiumCardButtonStyle}" Content="+ Nova Base" Click="btnNovaBase_Click" HorizontalAlignment="Stretch" Height="34"/>
-                <Button x:Name="btnImportarAliases" Grid.Column="2" Style="{StaticResource PremiumCardButtonStyle}" Content="Importar Aliases" Click="btnImportarAliases_Click" HorizontalAlignment="Stretch" Height="34"/>
+                <Button x:Name="btnOrdenarBases" Grid.Column="2" Width="34" Height="34" Style="{StaticResource PremiumCardButtonStyle}" ToolTip="Ordenar A-Z" Click="btnOrdenarBases_Click">
+                  <TextBlock x:Name="txtSortIcon" Text="A-Z" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#E6FFFFFF"/>
+                </Button>
+                <Button x:Name="btnImportarAliases" Grid.Column="4" Style="{StaticResource PremiumCardButtonStyle}" Content="Importar Aliases" Click="btnImportarAliases_Click" HorizontalAlignment="Stretch" Height="34"/>
               </Grid>
 
               <!-- Detail Editor (hidden when no connection is selected) -->
@@ -1086,6 +1195,17 @@
                     <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="CLIENTE ASSOCIADO / PERFIL"/>
                     <ComboBox x:Name="cbClienteAssociado" Height="34" ui:ControlHelper.CornerRadius="6" HorizontalAlignment="Stretch" Margin="0,0,0,12" IsEnabled="False"/>
 
+                    <!-- Color Tag Selector -->
+                    <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="MARCADOR DE COR"/>
+                    <Border Background="#0A0A0B" CornerRadius="8" Padding="6,4" HorizontalAlignment="Left" Margin="0,0,0,12">
+                      <StackPanel Orientation="Horizontal">
+                        <Border x:Name="colorTagNone" Width="22" Height="22" CornerRadius="11" Background="#33FFFFFF" BorderBrush="White" BorderThickness="2" MouseDown="colorTagSelector_MouseDown" Tag="" ToolTip="Sem cor" Margin="2,0"/>
+                        <Border x:Name="colorTagGreen" Width="22" Height="22" CornerRadius="11" Background="#4CAF50" BorderBrush="Transparent" BorderThickness="2" MouseDown="colorTagSelector_MouseDown" Tag="green" ToolTip="Verde" Margin="2,0"/>
+                        <Border x:Name="colorTagYellow" Width="22" Height="22" CornerRadius="11" Background="#FFC107" BorderBrush="Transparent" BorderThickness="2" MouseDown="colorTagSelector_MouseDown" Tag="yellow" ToolTip="Amarelo" Margin="2,0"/>
+                        <Border x:Name="colorTagRed" Width="22" Height="22" CornerRadius="11" Background="#F44336" BorderBrush="Transparent" BorderThickness="2" MouseDown="colorTagSelector_MouseDown" Tag="red" ToolTip="Vermelho" Margin="2,0"/>
+                      </StackPanel>
+                    </Border>
+
                     <!-- Versão da Base (RM) -->
                     <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="VERSÃO DA BASE (RM)"/>
                     <ComboBox x:Name="cbDbVersion" Height="34" ui:ControlHelper.CornerRadius="6" HorizontalAlignment="Stretch" Margin="0,0,0,12"/>
@@ -1105,7 +1225,17 @@
 
                       <StackPanel Grid.Column="2">
                         <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="SENHA RM"/>
-                        <PasswordBox x:Name="pbRmPass" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" MinWidth="130"/>
+                        <Grid>
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <PasswordBox x:Name="pbRmPass" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" MinWidth="130"/>
+                          <TextBox x:Name="txtRmPassVisible" Grid.Column="0" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,30,0" CaretBrush="White" Visibility="Collapsed" MinWidth="130"/>
+                          <Button x:Name="btnToggleRmPass" Grid.Column="1" Width="28" Height="28" Margin="0,0,4,0" Background="Transparent" BorderThickness="0" Click="btnTogglePass_Click" Tag="rm" ToolTip="Mostrar/ocultar senha" VerticalAlignment="Center">
+                            <TextBlock x:Name="iconToggleRmPass" Text="&#xE8AF;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF"/>
+                          </Button>
+                        </Grid>
                       </StackPanel>
                     </Grid>
                   </StackPanel>
@@ -1139,7 +1269,17 @@
 
                       <StackPanel Grid.Column="2">
                         <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="SENHA BANCO"/>
-                        <PasswordBox x:Name="pbDbPass" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" MinWidth="130"/>
+                        <Grid>
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <PasswordBox x:Name="pbDbPass" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" MinWidth="130"/>
+                          <TextBox x:Name="txtDbPassVisible" Grid.Column="0" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,30,0" CaretBrush="White" Visibility="Collapsed" MinWidth="130"/>
+                          <Button x:Name="btnToggleDbPass" Grid.Column="1" Width="28" Height="28" Margin="0,0,4,0" Background="Transparent" BorderThickness="0" Click="btnTogglePass_Click" Tag="db" ToolTip="Mostrar/ocultar senha" VerticalAlignment="Center">
+                            <TextBlock x:Name="iconToggleDbPass" Text="&#xE8AF;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF"/>
+                          </Button>
+                        </Grid>
                       </StackPanel>
                     </Grid>
                   </StackPanel>
@@ -1181,15 +1321,20 @@
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="6" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="6" />
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
 
               <Button x:Name="btnSalvarBase" Grid.Column="0" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumPrimaryButtonStyle}" Content="Salvar Alterações" Click="btnSalvarBase_Click" FontWeight="SemiBold"/>
               <Button x:Name="btnTestarConexao" Grid.Column="2" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumCardButtonStyle}" Content="Testar Conexão" Click="btnTestarConexao_Click" FontWeight="SemiBold"/>
-              <Button x:Name="btnDeletarBase" Grid.Column="4" Width="38" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumRedButtonStyle}" ToolTip="Remover Alias" Click="btnDeletarBase_Click">
+              <Button x:Name="btnDuplicarBase" Grid.Column="4" Width="38" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumCardButtonStyle}" ToolTip="Duplicar Base" Click="btnDuplicarBase_Click">
+                <TextBlock Text="&#xE1D6;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Button>
+              <Button x:Name="btnDeletarBase" Grid.Column="6" Width="38" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumRedButtonStyle}" ToolTip="Remover Alias" Click="btnDeletarBase_Click">
                 <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
               </Button>
             </Grid>

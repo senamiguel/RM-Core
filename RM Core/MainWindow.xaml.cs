@@ -30,6 +30,8 @@ namespace RM_Core
         private System.Collections.ObjectModel.ObservableCollection<AliasConfig> filteredAliases = new System.Collections.ObjectModel.ObservableCollection<AliasConfig>();
         private bool _isSyncing = false;
         private bool _isOperationRunning = false;
+        private bool _sortBasesAsc = true;
+        private string _logSearchTerm = "";
 
         // TrayService — system tray / lifecycle management
         private TrayService _trayService = null!;
@@ -351,13 +353,17 @@ namespace RM_Core
             foreach (var alias in items)
             {
                 cbAliasDB.Items.Add(alias.name);
-                cbBase.Items.Add(alias.name);
+                cbBase.Items.Add(alias);
             }
 
-
+            cbAliasDB_SelectionChanged(sender: null!, e: null!);
+            cbBase_SelectionChanged(sender: null!, e: null!);
 
             cbAliasDB.SelectionChanged += cbAliasDB_SelectionChanged;
             cbBase.SelectionChanged += cbBase_SelectionChanged;
+
+            // Refresh color dots after a short delay to allow layout to complete
+            Dispatcher.BeginInvoke(new Action(() => RefreshCbBaseColors()));
         }
 
         private void cbVersaoRM_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -390,13 +396,15 @@ namespace RM_Core
             foreach (var alias in items)
             {
                 cbAliasDB.Items.Add(alias.name);
-                cbBase.Items.Add(alias.name);
+                cbBase.Items.Add(alias);
             }
 
 
 
             cbAliasDB.SelectionChanged += cbAliasDB_SelectionChanged;
             cbBase.SelectionChanged += cbBase_SelectionChanged;
+
+            Dispatcher.BeginInvoke(new Action(() => RefreshCbBaseColors()));
         }
 
         private void LoadProfiles()
@@ -580,6 +588,8 @@ namespace RM_Core
             cbPerfis.SelectionChanged += cbPerfis_SelectionChanged;
             cbClienteAtivo.SelectionChanged += cbClienteAtivo_SelectionChanged;
 
+            RefreshFavoritosSection();
+
             if (cbPerfis.Items.Count > 0)
             {
                 cbPerfis.SelectedIndex = 0;
@@ -614,9 +624,13 @@ namespace RM_Core
                 // Dynamically update and filter bases for this client!
                 UpdateAliasesUI(profile.Name);
 
+                // Sync favorite icon
+                UpdateFavoritoIcon(profile.IsFavorite);
+
                 // Set selected base
                 cbAliasDB.SelectedItem = profile.Alias;
-                cbBase.SelectedItem = profile.Alias;
+                var matchBase = aliases.FirstOrDefault(a => a.name == profile.Alias && a.client.Equals(profile.Name, StringComparison.OrdinalIgnoreCase));
+                cbBase.SelectedItem = matchBase;
             }
             finally
             {
@@ -633,6 +647,7 @@ namespace RM_Core
                 cbPerfis.SelectedItem = selectedName;
                 LoadProfileToUI(profile);
                 UpdateFilteredAliasesList();
+                RefreshFavoritosSection();
                 AddLog("info", $"Cliente \"{selectedName}\" carregado via Início.");
             }
         }
@@ -646,6 +661,7 @@ namespace RM_Core
                 cbClienteAtivo.SelectedItem = selectedName;
                 LoadProfileToUI(profile);
                 UpdateFilteredAliasesList();
+                RefreshFavoritosSection();
                 AddLog("info", $"Cliente \"{selectedName}\" selecionado.");
             }
         }
@@ -656,7 +672,7 @@ namespace RM_Core
             _isSyncing = true;
             try
             {
-                string selectedBase = cbBase.SelectedItem?.ToString() ?? string.Empty;
+                string selectedBase = (cbBase.SelectedItem is AliasConfig aliasCfg) ? aliasCfg.name : (cbBase.SelectedItem?.ToString() ?? string.Empty);
                 cbAliasDB.SelectedItem = selectedBase;
                 
                 // Update active client model settings
@@ -747,6 +763,7 @@ namespace RM_Core
             cbClienteAtivo.SelectionChanged += cbClienteAtivo_SelectionChanged;
 
             UpdateFilteredAliasesList();
+            RefreshFavoritosSection();
 
             AddLog("info", $"Cliente \"{name}\" salvo com sucesso.");
             MessageBox.Show($"Cliente \"{name}\" salvo com sucesso!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -791,6 +808,7 @@ namespace RM_Core
 
             UpdateProfilesUI();
             UpdateFilteredAliasesList();
+            RefreshFavoritosSection();
             
             cbClienteAtivo.SelectionChanged -= cbClienteAtivo_SelectionChanged;
             cbClienteAtivo.Items.Clear();
@@ -870,6 +888,33 @@ namespace RM_Core
         {
             logs.Clear();
             AddLog("info", "Logs limpos.");
+        }
+
+        private void txtFiltrarLogs_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            _logSearchTerm = txtFiltrarLogs.Text.Trim().ToLower();
+            btnLimparFiltroLogs.Visibility = string.IsNullOrEmpty(_logSearchTerm) ? Visibility.Collapsed : Visibility.Visible;
+            AplicarFiltroLogs();
+        }
+
+        private void AplicarFiltroLogs()
+        {
+            listLogs.ItemsSource = null;
+            if (string.IsNullOrEmpty(_logSearchTerm))
+            {
+                listLogs.ItemsSource = logs;
+            }
+            else
+            {
+                listLogs.ItemsSource = logs.Where(l =>
+                    l.Message.ToLower().Contains(_logSearchTerm) ||
+                    l.Type.ToLower().Contains(_logSearchTerm)).ToList();
+            }
+        }
+
+        private void btnLimparFiltroLogs_Click(object sender, RoutedEventArgs e)
+        {
+            txtFiltrarLogs.Text = "";
         }
 
         private async void btnIniciarCompleto_Click(object sender, RoutedEventArgs e)
@@ -1316,18 +1361,22 @@ namespace RM_Core
         {
             try
             {
-                AddLog("info", "Abrindo Gerenciador do IIS (inetmgr.exe)...");
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = "inetmgr.exe",
-                    UseShellExecute = true
-                });
+                AddLog("info", "Abrindo Configuração IIS...");
+                var win = new IISConfigWindow { Owner = this };
+                win.ShowDialog();
+                AddLog("info", "Configuração IIS fechada.");
             }
             catch (Exception ex)
             {
-                AddLog("error", $"Erro ao abrir o Gerenciador do IIS: {ex.Message}");
-                MessageBox.Show($"Erro ao abrir o Gerenciador do IIS: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+                AddLog("error", $"Erro ao abrir Configuração IIS: {ex.Message}");
+                MessageBox.Show($"Erro ao abrir Configuração IIS: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void btnExecutarSql_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new SqlQueryWindow { Owner = this };
+            win.ShowDialog();
         }
 
         private void btnReciclarAppPool_Click(object sender, RoutedEventArgs e)
@@ -1520,7 +1569,7 @@ namespace RM_Core
             return string.Empty;
         }
 
-        private AliasConfig GetActiveAlias()
+        public AliasConfig GetActiveAlias()
         {
             string activeClient = cbClienteAtivo.SelectedItem?.ToString() ?? cbPerfis.SelectedItem?.ToString() ?? string.Empty;
             if (cbBase.SelectedItem != null)
@@ -2233,6 +2282,7 @@ namespace RM_Core
             SaveAliases();
             UpdateProfilesUI();
             UpdateFilteredAliasesList();
+            RefreshFavoritosSection();
 
             if (profiles.TryGetValue(wiz.ClientName, out var p))
             {
@@ -2340,6 +2390,17 @@ namespace RM_Core
             }
             catch { /* keep defaults */ }
 
+            // Apply favorites and tag colors to in-memory objects
+            foreach (var kv in profiles)
+            {
+                kv.Value.IsFavorite = _appSettings.FavoriteClientNames.Contains(kv.Key);
+            }
+            foreach (var alias in aliases)
+            {
+                if (_appSettings.BaseTagColors.TryGetValue(alias.id, out var color))
+                    alias.TagColor = color;
+            }
+
             // Sincroniza os toggles da aba Sobre com o que está persistido
             _isSyncing = true;
             try
@@ -2358,6 +2419,8 @@ namespace RM_Core
         {
             try
             {
+                _appSettings.FavoriteClientNames = profiles.Values.Where(p => p.IsFavorite).Select(p => p.Name).ToList();
+                _appSettings.BaseTagColors = aliases.Where(a => !string.IsNullOrEmpty(a.TagColor)).ToDictionary(a => a.id, a => a.TagColor);
                 Directory.CreateDirectory(Path.GetDirectoryName(_appSettingsPath)!);
                 File.WriteAllText(_appSettingsPath, JsonSerializer.Serialize(_appSettings));
             }
@@ -2396,8 +2459,10 @@ namespace RM_Core
             btnSalvarBase.IsEnabled = !loading;
             btnTestarConexao.IsEnabled = !loading;
             btnDeletarBase.IsEnabled = !loading;
+            btnDuplicarBase.IsEnabled = !loading;
             btnBaixarUpdate.IsEnabled = !loading;
             btnLimparLogs.IsEnabled = !loading;
+            btnExecutarSql.IsEnabled = !loading;
             btnAtualizarServicos.IsEnabled = !loading;
             
             menuIniciarSeparado.IsEnabled = !loading;
@@ -2517,7 +2582,7 @@ namespace RM_Core
             UpdateFilteredAliasesList();
         }
 
-        private void UpdateFilteredAliasesList()
+        private void UpdateFilteredAliasesList(string searchTerm = "")
         {
             if (filteredAliases == null) return;
             string activeClient = cbPerfis.SelectedItem?.ToString() ?? cbClienteAtivo.SelectedItem?.ToString() ?? string.Empty;
@@ -2526,8 +2591,252 @@ namespace RM_Core
             {
                 if (alias.client.Equals(activeClient, StringComparison.OrdinalIgnoreCase))
                 {
-                    filteredAliases.Add(alias);
+                    if (string.IsNullOrEmpty(searchTerm) || alias.name.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0 || (alias.Base?.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0))
+                    {
+                        filteredAliases.Add(alias);
+                    }
                 }
+            }
+            RefreshBaseListColorDots();
+        }
+
+        // ---------------------------------------------------------------
+        // Feature 3: Search filter on bases
+        // ---------------------------------------------------------------
+        private void txtSearchBase_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            UpdateFilteredAliasesList(txtSearchBase.Text.Trim());
+        }
+
+        // ---------------------------------------------------------------
+        // Feature 2: Color tag selector
+        // ---------------------------------------------------------------
+        private void colorTagSelector_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (sender is Border border && lstBases.SelectedItem is AliasConfig selectedAlias)
+            {
+                string tag = border.Tag?.ToString() ?? "";
+                selectedAlias.TagColor = tag;
+                UpdateColorTagSelectorUI(tag);
+                RefreshBaseListColorDots();
+                RefreshCbBaseColors();
+            }
+        }
+
+        private void UpdateColorTagSelectorUI(string selectedColor)
+        {
+            var borders = new[] { colorTagNone, colorTagGreen, colorTagYellow, colorTagRed };
+            foreach (var b in borders)
+            {
+                b.BorderBrush = (b.Tag?.ToString() == selectedColor) ? new SolidColorBrush(System.Windows.Media.Colors.White) : new SolidColorBrush(System.Windows.Media.Colors.Transparent);
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // Refresh color dots on lstBases and cbBase
+        // ---------------------------------------------------------------
+        private void RefreshBaseListColorDots()
+        {
+            if (lstBases.Items.Count == 0) return;
+            for (int i = 0; i < lstBases.Items.Count; i++)
+            {
+                var item = lstBases.ItemContainerGenerator.ContainerFromIndex(i) as System.Windows.Controls.ListBoxItem;
+                if (item == null) continue;
+                var alias = item.DataContext as AliasConfig;
+                if (alias == null) continue;
+                var ellipse = FindVisualChild<System.Windows.Shapes.Ellipse>(item);
+                if (ellipse != null)
+                {
+                    ellipse.Fill = GetColorBrush(alias.TagColor);
+                }
+            }
+        }
+
+        private void RefreshCbBaseColors()
+        {
+            if (cbBase.Items.Count == 0) return;
+            for (int i = 0; i < cbBase.Items.Count; i++)
+            {
+                var item = cbBase.ItemContainerGenerator.ContainerFromIndex(i) as System.Windows.Controls.ComboBoxItem;
+                if (item == null) continue;
+                var alias = item.DataContext as AliasConfig;
+                if (alias == null) continue;
+                var ellipse = FindVisualChild<System.Windows.Shapes.Ellipse>(item);
+                if (ellipse != null)
+                {
+                    ellipse.Fill = GetColorBrush(alias.TagColor);
+                }
+            }
+        }
+
+        private System.Windows.Media.Brush GetColorBrush(string tagColor)
+        {
+            return tagColor switch
+            {
+                "green" => new SolidColorBrush(System.Windows.Media.Color.FromRgb(76, 175, 80)),
+                "yellow" => new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 193, 7)),
+                "red" => new SolidColorBrush(System.Windows.Media.Color.FromRgb(244, 67, 54)),
+                _ => new SolidColorBrush(System.Windows.Media.Colors.Transparent)
+            };
+        }
+
+        private T? FindVisualChild<T>(System.Windows.DependencyObject parent) where T : System.Windows.DependencyObject
+        {
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                if (child is T t) return t;
+                var result = FindVisualChild<T>(child);
+                if (result != null) return result;
+            }
+            return null;
+        }
+
+        // ---------------------------------------------------------------
+        // Feature 4: Favorite clients on Home
+        // ---------------------------------------------------------------
+        private void RefreshFavoritosSection()
+        {
+            var favs = profiles.Values.Where(p => p.IsFavorite).ToList();
+            if (favs.Count > 0)
+            {
+                panelFavoritos.Visibility = Visibility.Visible;
+                listFavoritos.ItemsSource = null;
+                listFavoritos.ItemsSource = favs;
+            }
+            else
+            {
+                panelFavoritos.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void btnFavoritoIniciar_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string clientName)
+            {
+                if (profiles.TryGetValue(clientName, out var profile))
+                {
+                    cbPerfis.SelectedItem = clientName;
+                    cbClienteAtivo.SelectedItem = clientName;
+                    LoadProfileToUI(profile);
+                    _ = IniciarRMPlusHostAsync();
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // Feature 5: Toggle password visibility
+        // ---------------------------------------------------------------
+        private void btnTogglePass_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn)
+            {
+                string target = btn.Tag?.ToString() ?? "";
+                if (target == "rm")
+                {
+                    if (pbRmPass.Visibility == Visibility.Visible)
+                    {
+                        txtRmPassVisible.Text = pbRmPass.Password;
+                        pbRmPass.Visibility = Visibility.Collapsed;
+                        txtRmPassVisible.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        pbRmPass.Password = txtRmPassVisible.Text;
+                        pbRmPass.Visibility = Visibility.Visible;
+                        txtRmPassVisible.Visibility = Visibility.Collapsed;
+                    }
+                }
+                else if (target == "db")
+                {
+                    if (pbDbPass.Visibility == Visibility.Visible)
+                    {
+                        txtDbPassVisible.Text = pbDbPass.Password;
+                        pbDbPass.Visibility = Visibility.Collapsed;
+                        txtDbPassVisible.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        pbDbPass.Password = txtDbPassVisible.Text;
+                        pbDbPass.Visibility = Visibility.Visible;
+                        txtDbPassVisible.Visibility = Visibility.Collapsed;
+                    }
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // Feature 1: Favorite toggle
+        // ---------------------------------------------------------------
+        private void btnToggleFavorito_Click(object sender, RoutedEventArgs e)
+        {
+            string name = txtNomePerfil.Text.Trim();
+            if (string.IsNullOrEmpty(name)) return;
+            if (!profiles.TryGetValue(name, out var profile))
+            {
+                // If the name changed, find by selected item
+                string selected = cbPerfis.SelectedItem?.ToString() ?? string.Empty;
+                if (!profiles.TryGetValue(selected, out profile)) return;
+            }
+            profile.IsFavorite = !profile.IsFavorite;
+            UpdateFavoritoIcon(profile.IsFavorite);
+            RefreshFavoritosSection();
+            SaveAppSettings();
+            AddLog("info", $"Cliente \"{profile.Name}\" {(profile.IsFavorite ? "marcado como favorito" : "removido dos favoritos")}.");
+        }
+
+        private void UpdateFavoritoIcon(bool isFavorite)
+        {
+            if (isFavorite)
+            {
+                iconFavorito.Text = "\uE1CF";
+                iconFavorito.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 193, 7));
+            }
+            else
+            {
+                iconFavorito.Text = "\uE1CE";
+                iconFavorito.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(128, 128, 128));
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // Feature 6: Export specific client
+        // ---------------------------------------------------------------
+        private void btnExportarCliente_Click(object sender, RoutedEventArgs e)
+        {
+            string selectedName = cbPerfis.SelectedItem?.ToString() ?? string.Empty;
+            if (string.IsNullOrEmpty(selectedName) || !profiles.TryGetValue(selectedName, out var profile))
+            {
+                MessageBox.Show("Selecione um cliente para exportar.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                var dlg = new Microsoft.Win32.SaveFileDialog
+                {
+                    Title = $"Exportar Cliente - {selectedName}",
+                    Filter = "JSON|*.json",
+                    FileName = $"{selectedName}.json"
+                };
+                if (dlg.ShowDialog(this) != true) return;
+
+                var clientAliases = aliases.Where(a => a.client.Equals(selectedName, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                var data = new ExportData
+                {
+                    Profiles = new List<ProfileSettings> { profile },
+                    Aliases = clientAliases
+                };
+                var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(dlg.FileName, json);
+                AddLog("info", $"Cliente \"{selectedName}\" exportado: {dlg.FileName}");
+                MessageBox.Show($"Cliente \"{selectedName}\" exportado com sucesso!", "Exportar", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                AddLog("error", $"Erro ao exportar cliente: {ex.Message}");
+                MessageBox.Show($"Erro ao exportar: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -2566,12 +2875,30 @@ namespace RM_Core
                 chkLocalOnly.IsChecked = selectedAlias.localOnly;
                 chkProcessPool.IsChecked = selectedAlias.processPool;
                 txtMaxThreads.Text = selectedAlias.maxThreads.ToString();
+
+                // Update color tag selector
+                UpdateColorTagSelectorUI(selectedAlias.TagColor);
+                RefreshBaseListColorDots();
             }
             else
             {
                 stackDetailsEditor.Visibility = Visibility.Collapsed;
                 borderActionBar.Visibility = Visibility.Collapsed;
             }
+        }
+
+        private void btnOrdenarBases_Click(object sender, RoutedEventArgs e)
+        {
+            _sortBasesAsc = !_sortBasesAsc;
+            txtSortIcon.Text = _sortBasesAsc ? "A-Z" : "Z-A";
+
+            var sorted = _sortBasesAsc
+                ? filteredAliases.OrderBy(a => a.name).ToList()
+                : filteredAliases.OrderByDescending(a => a.name).ToList();
+
+            filteredAliases.Clear();
+            foreach (var a in sorted)
+                filteredAliases.Add(a);
         }
 
         private void btnNovaBase_Click(object sender, RoutedEventArgs e)
@@ -2627,6 +2954,7 @@ namespace RM_Core
 
                 selectedAlias.runService = chkRunService.IsChecked == true;
                 selectedAlias.jobProcessing = chkJobProcessing.IsChecked == true;
+                // Save TagColor from color selector
                 selectedAlias.localOnly = chkLocalOnly.IsChecked == true;
                 selectedAlias.processPool = chkProcessPool.IsChecked == true;
 
@@ -2649,6 +2977,42 @@ namespace RM_Core
 
                 AddLog("info", $"Alias \"{name}\" atualizado com sucesso.");
                 MessageBox.Show($"Alias \"{name}\" atualizado com sucesso!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void btnDuplicarBase_Click(object sender, RoutedEventArgs e)
+        {
+            if (lstBases.SelectedItem is AliasConfig selectedAlias)
+            {
+                var newAlias = new AliasConfig
+                {
+                    id = DateTime.Now.Ticks.ToString(),
+                    name = selectedAlias.name + " (cópia)",
+                    Base = selectedAlias.Base,
+                    client = selectedAlias.client,
+                    server = selectedAlias.server,
+                    dbType = selectedAlias.dbType,
+                    dbUser = selectedAlias.dbUser,
+                    dbPass = selectedAlias.dbPass,
+                    rmUser = selectedAlias.rmUser,
+                    rmPass = selectedAlias.rmPass,
+                    runService = selectedAlias.runService,
+                    jobProcessing = selectedAlias.jobProcessing,
+                    localOnly = selectedAlias.localOnly,
+                    processPool = selectedAlias.processPool,
+                    maxThreads = selectedAlias.maxThreads,
+                    dbVersion = selectedAlias.dbVersion,
+                    TagColor = selectedAlias.TagColor
+                };
+                aliases.Add(newAlias);
+                SaveAliases();
+                UpdateFilteredAliasesList();
+                lstBases.SelectedItem = newAlias;
+
+                if (cbClienteAtivo.SelectedItem != null)
+                    UpdateAliasesUI(cbClienteAtivo.SelectedItem.ToString()!);
+
+                AddLog("info", $"Alias duplicado: \"{newAlias.name}\".");
             }
         }
 
@@ -3229,12 +3593,14 @@ namespace RM_Core
         public bool   StartMinimized       { get; set; } = false;
         public bool   FirstRunComplete     { get; set; } = false;
         public string RmInstallPath        { get; set; } = string.Empty; // pasta <versao>\Bin
+        public List<string> FavoriteClientNames { get; set; } = new();
+        public Dictionary<string, string> BaseTagColors { get; set; } = new();
     }
 
     public class LogEntry
     {
         public DateTime Time { get; set; }
-        public string Type { get; set; } = string.Empty; // "info", "error", "stdout", etc.
+        public string Type { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
 
         public string TimeFormatted => $"[{Time:HH:mm:ss}]";
@@ -3251,49 +3617,38 @@ namespace RM_Core
     {
         [System.Text.Json.Serialization.JsonPropertyName("profileName")]
         public string Name { get; set; } = string.Empty;
-
         [System.Text.Json.Serialization.JsonPropertyName("rmVersion")]
         public string RmVersion { get; set; } = "12.1.2402";
-
         [System.Text.Json.Serialization.JsonPropertyName("alias")]
         public string Alias { get; set; } = "CorporeRM";
-
         [System.Text.Json.Serialization.JsonPropertyName("autoLogin")]
         public bool AutoLogin { get; set; }
-
         [System.Text.Json.Serialization.JsonPropertyName("delBroker")]
         public bool DelBroker { get; set; }
-
         [System.Text.Json.Serialization.JsonPropertyName("verboseLogs")]
         public bool VerboseLogs { get; set; }
-
         [System.Text.Json.Serialization.JsonPropertyName("apagarHost")]
         public bool ApagarHost { get; set; }
-
         [System.Text.Json.Serialization.JsonPropertyName("normalizePath")]
         public bool NormalizePath { get; set; }
-
         [System.Text.Json.Serialization.JsonPropertyName("enableProcessIsolation")]
         public bool EnableProcessIsolation { get; set; }
-
         [System.Text.Json.Serialization.JsonPropertyName("jobServer3Camadas")]
         public bool JobServer3Camadas { get; set; }
-
         [System.Text.Json.Serialization.JsonPropertyName("enableCompression")]
         public bool EnableCompression { get; set; }
+        // Favorito
+        public bool IsFavorite { get; set; }
     }
 
     public class AliasConfig
     {
         public string id { get; set; } = string.Empty;
         public string name { get; set; } = string.Empty;
-        
         [System.Text.Json.Serialization.JsonPropertyName("base")]
         public string Base { get; set; } = string.Empty;
-        
         [System.Text.Json.Serialization.JsonPropertyName("client")]
         public string client { get; set; } = string.Empty;
-
         public string server { get; set; } = string.Empty;
         public string dbType { get; set; } = string.Empty;
         public string dbUser { get; set; } = string.Empty;
@@ -3306,5 +3661,8 @@ namespace RM_Core
         public bool processPool { get; set; }
         public int maxThreads { get; set; }
         public string dbVersion { get; set; } = string.Empty;
+        // Extras
+        public bool IsFavorite { get; set; }
+        public string TagColor { get; set; } = ""; // "green","yellow","red",""
     }
 }

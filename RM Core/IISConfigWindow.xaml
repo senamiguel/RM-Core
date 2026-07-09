@@ -1,0 +1,137 @@
+<Window x:Class="RM_Core.IISConfigWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        ui:WindowHelper.SystemBackdropType="Mica"
+        ui:TitleBar.Height="36"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        mc:Ignorable="d"
+        Title="Configuração IIS"
+        Height="500" Width="600"
+        Background="#1C1C1E"
+        FontFamily="Inter, Segoe UI, Arial"
+        FontSize="13">
+
+  <Window.Resources>
+    <Style x:Key="CardBtnStyle" TargetType="Button">
+      <Setter Property="Background" Value="#0CFFFFFF"/>
+      <Setter Property="BorderBrush" Value="#1AFFFFFF"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Foreground" Value="#E6FFFFFF"/>
+      <Setter Property="Padding" Value="12,6"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="border" Property="Background" Value="#16FFFFFF"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="PrimaryBtnStyle" TargetType="Button">
+      <Setter Property="Background" Value="#0078D4"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Padding" Value="12,6"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6" SnapsToDevicePixels="True">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="border" Property="Background" Value="#0086F0"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="border" Property="Background" Value="#005A9E"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
+
+  <Grid Margin="12">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="180" />
+      <ColumnDefinition Width="12" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+
+    <!-- Left: Sites List -->
+    <Border Grid.Column="0" Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="0">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TextBlock Text="SITES IIS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="10,10,10,6"/>
+        <ListBox x:Name="lstSites" Grid.Row="1" Background="Transparent" BorderThickness="0" SelectionChanged="lstSites_SelectionChanged" Margin="4,0,4,4"/>
+      </Grid>
+    </Border>
+
+    <!-- Right: Details -->
+    <Grid Grid.Column="2">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <!-- Site Name -->
+      <StackPanel Grid.Row="0" Margin="0,0,0,10">
+        <TextBlock Text="NOME DO SITE" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,6"/>
+        <TextBlock x:Name="txtSiteName" Text="Selecione um site" FontSize="16" FontWeight="Bold" Foreground="#E6FFFFFF"/>
+      </StackPanel>
+
+      <!-- Physical Path -->
+      <Border Grid.Row="1" Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,10">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+          <TextBlock Text="CAMINHO FÍSICO" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,6"/>
+          <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="8" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="txtPhysicalPath" Height="30" ui:ControlHelper.CornerRadius="4" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="6,0,6,0" CaretBrush="White"/>
+            <Button x:Name="btnSalvarPath" Grid.Column="2" Content="Salvar Path" Style="{StaticResource PrimaryBtnStyle}" Height="30" Click="btnSalvarPath_Click"/>
+          </Grid>
+        </Grid>
+      </Border>
+
+      <!-- URL Rewrite -->
+      <Border Grid.Row="2" Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="12,10">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          <TextBlock Text="URL REWRITE (web.config)" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,6"/>
+          <TextBox x:Name="txtUrlRewrite" Grid.Row="1" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" FontFamily="Consolas, monospace" FontSize="11" Background="#1C1C1E" BorderBrush="#33FFFFFF" Foreground="#E6FFFFFF" Padding="8" CaretBrush="White"/>
+        </Grid>
+      </Border>
+
+      <!-- Action Buttons -->
+      <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+        <Button x:Name="btnSalvarRewrite" Content="Salvar URL Rewrite" Style="{StaticResource PrimaryBtnStyle}" Height="32" Click="btnSalvarRewrite_Click"/>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</Window>
