@@ -349,7 +349,8 @@ namespace RM_Core
                 }
             }
 
-            var items = matched.Count > 0 ? matched : unmatched;
+            // Se versao definida, SÓ mostra bases dessa versao (sem fallback pra unmatched)
+            var items = matched;
             foreach (var alias in items)
             {
                 cbAliasDB.Items.Add(alias.name);
@@ -392,7 +393,7 @@ namespace RM_Core
                 }
             }
 
-            var items = matched.Count > 0 ? matched : unmatched;
+            var items = matched;
             foreach (var alias in items)
             {
                 cbAliasDB.Items.Add(alias.name);
@@ -777,7 +778,7 @@ namespace RM_Core
                 txtNomePerfil.Text = string.Empty;
                 txtNomePerfil.Focus();
                 if (cbVersaoRM.Items.Count > 0) cbVersaoRM.SelectedIndex = 0;
-                tsAutoLogin.IsOn = false;
+                tsAutoLogin.IsOn = true;
                 tsDeletarBroker.IsOn = false;
                 tsVerboseLogs.IsOn = true;
                 tsApagarHost.IsOn = false;
@@ -843,6 +844,10 @@ namespace RM_Core
 
         private void AddLog(string type, string message)
         {
+            // Logs Detalhados OFF → só mostra erros/avisos (ignora info/stdout)
+            if (tsVerboseLogs != null && !tsVerboseLogs.IsOn && type != "error" && type != "warn" && type != "stderr")
+                return;
+
             logs.Add(new LogEntry
             {
                 Time = DateTime.Now,
@@ -1320,6 +1325,35 @@ namespace RM_Core
             }
         }
 
+        private void btnApagarBroker_Click(object sender, RoutedEventArgs e)
+        {
+            string binDir = GetBinDirectory();
+            if (string.IsNullOrEmpty(binDir))
+            {
+                AddLog("error", "Pasta de instalação do RM não configurada.");
+                MessageBox.Show("Pasta de instalação do RM não encontrada.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            string brokerPath = Path.Combine(binDir, "_broker.dat");
+            if (!File.Exists(brokerPath))
+            {
+                AddLog("info", "_broker.dat não encontrado.");
+                MessageBox.Show("Nao encontrado", "Apagar _Broker.dat", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            try
+            {
+                File.Delete(brokerPath);
+                AddLog("info", "_broker.dat excluído manualmente.");
+                MessageBox.Show("_broker.dat excluído com sucesso!", "Apagar _Broker.dat", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                AddLog("error", $"Erro ao excluir _broker.dat: {ex.Message}");
+                MessageBox.Show($"Erro ao excluir _broker.dat: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private void btnHost2_Click(object sender, RoutedEventArgs e)
         {
             if (_isOperationRunning) return;
@@ -1422,13 +1456,17 @@ namespace RM_Core
                     return;
                 }
 
+                string args = $"-S \"{alias.server}\"";
+                if (!string.IsNullOrWhiteSpace(alias.Base))
+                    args += $" -d \"{alias.Base}\"";
+
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = ssmsPath,
-                    Arguments = $"-S \"{alias.server}\"",
+                    Arguments = args,
                     UseShellExecute = true
                 });
-                AddLog("info", $"SSMS aberto: servidor {alias.server}");
+                AddLog("info", $"SSMS aberto: servidor {alias.server}, base {alias.Base}");
             }
             catch (Exception ex)
             {
@@ -2508,6 +2546,7 @@ namespace RM_Core
             btnConfigIIS.IsEnabled = !loading;
             btnReciclarAppPool.IsEnabled = !loading;
             btnLimparTemp.IsEnabled = !loading;
+            btnApagarBroker.IsEnabled = !loading;
             btnSalvarPerfil.IsEnabled = !loading;
             btnDeletarPerfil.IsEnabled = !loading;
             // btnImportarAmbientes and btnImportarAliases removed
@@ -2849,12 +2888,9 @@ namespace RM_Core
             if (sender is Button btn && btn.DataContext is AliasConfig alias)
             {
                 alias.IsFavorite = !alias.IsFavorite;
-                var starText = FindVisualChild<TextBlock>(btn);
-                if (starText != null)
-                {
-                    starText.Text = alias.IsFavorite ? "\uE734" : "\uE735";
-                }
                 SaveAppSettings();
+                lstBases.Items.Refresh();
+                RefreshCbBaseColors();
             }
         }
 
@@ -3164,7 +3200,8 @@ namespace RM_Core
                 string host = serverAddress;
                 int port = dbType.Equals("oracle", StringComparison.OrdinalIgnoreCase) ? 1521 : 1433;
 
-                if (host.Contains("/"))
+                // Extrai host:port de vários formatos sem perder o instance name
+                if (host.Contains("/") && !host.Contains("\\"))
                 {
                     var parts = host.Split('/');
                     host = parts[0].Trim();
@@ -3181,11 +3218,6 @@ namespace RM_Core
                     var parts = host.Split(':');
                     host = parts[0].Trim();
                     int.TryParse(parts[1].Trim(), out port);
-                }
-                else if (host.Contains("\\"))
-                {
-                    var parts = host.Split('\\');
-                    host = parts[0].Trim();
                 }
 
                 AddLog("info", $"Testando conexão de rede com {host}:{port}...");
@@ -3531,6 +3563,44 @@ namespace RM_Core
             }
         }
 
+        private void btnResetFabrica_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show("Tem certeza? Todos os dados (clientes, bases, configuracoes) serao perdidos.", "Reset de Fabrica", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (result != MessageBoxResult.Yes) return;
+
+            try
+            {
+                string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RM_Core");
+
+                string[] filesToDelete =
+                {
+                    "rmcore.db", "rmcore.db-shm", "rmcore.db-wal",
+                    "app_settings.json", "window_settings.json",
+                    "profiles.json", "aliases.json"
+                };
+
+                foreach (var file in filesToDelete)
+                {
+                    string path = Path.Combine(appData, file);
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                        AddLog("info", $"Arquivo removido: {file}");
+                    }
+                }
+
+                AddLog("info", "Dados resetados com sucesso.");
+                MessageBox.Show("Dados resetados. Reinicie o aplicativo.", "Reset de Fabrica", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                Application.Current.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                AddLog("error", $"Erro ao resetar dados: {ex.Message}");
+                MessageBox.Show($"Erro ao resetar dados: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private async Task CheckForUpdatesAsync()
         {
             try
@@ -3692,11 +3762,11 @@ namespace RM_Core
         [System.Text.Json.Serialization.JsonPropertyName("profileName")]
         public string Name { get; set; } = string.Empty;
         [System.Text.Json.Serialization.JsonPropertyName("rmVersion")]
-        public string RmVersion { get; set; } = "12.1.2402";
+        public string RmVersion { get; set; } = "";
         [System.Text.Json.Serialization.JsonPropertyName("alias")]
         public string Alias { get; set; } = "CorporeRM";
         [System.Text.Json.Serialization.JsonPropertyName("autoLogin")]
-        public bool AutoLogin { get; set; }
+        public bool AutoLogin { get; set; } = true;
         [System.Text.Json.Serialization.JsonPropertyName("delBroker")]
         public bool DelBroker { get; set; }
         [System.Text.Json.Serialization.JsonPropertyName("verboseLogs")]

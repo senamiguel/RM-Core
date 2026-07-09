@@ -448,6 +448,11 @@
               <TextBlock Text="QUICK SETTINGS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,8"/>
               <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12">
                 <Grid>
+                  <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                  </Grid.RowDefinitions>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="20" />
@@ -455,7 +460,7 @@
                   </Grid.ColumnDefinitions>
 
                   <!-- Limpar Brokers -->
-                  <Grid Grid.Column="0">
+                  <Grid Grid.Row="0" Grid.Column="0">
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="*" />
                       <ColumnDefinition Width="Auto" />
@@ -465,7 +470,7 @@
                   </Grid>
 
                   <!-- Logs Detalhados -->
-                  <Grid Grid.Column="2">
+                  <Grid Grid.Row="0" Grid.Column="2">
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="Auto" />
                       <ColumnDefinition Width="*" />
@@ -481,6 +486,17 @@
 
                     <ui:ToggleSwitch x:Name="tsLogsDetalhados" Grid.Column="2" IsOn="False" OffContent="" OnContent="" MinWidth="0" Margin="10,0,0,0" VerticalAlignment="Center" Toggled="ts_Toggled"/>
                   </Grid>
+
+                  <Border Grid.Row="1" Grid.ColumnSpan="3" BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,8,0,8"/>
+
+                  <Button x:Name="btnApagarBroker" Grid.Row="2" Grid.ColumnSpan="3"
+                          Style="{StaticResource PremiumCardButtonStyle}"
+                          Height="34" Click="btnApagarBroker_Click">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                      <TextBlock Text="&#xE107;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                      <TextBlock Text="Apagar _Broker.dat" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Button>
                 </Grid>
               </Border>
             </StackPanel>
@@ -1155,7 +1171,18 @@
                         <Ellipse x:Name="colorDot" Width="10" Height="10" Fill="Transparent" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <TextBlock Grid.Column="1" Text="{Binding name}" VerticalAlignment="Center" Foreground="#E6FFFFFF"/>
                         <Button Grid.Column="2" Width="18" Height="18" Background="Transparent" BorderThickness="0" Click="btnToggleBaseFavorito_Click" ToolTip="Favoritar base" VerticalAlignment="Center">
-                          <TextBlock Text="&#xE735;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#FFC107"/>
+                          <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#FFC107" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock.Style>
+                              <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="&#xE735;"/>
+                                <Style.Triggers>
+                                  <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                    <Setter Property="Text" Value="&#xE734;"/>
+                                  </DataTrigger>
+                                </Style.Triggers>
+                              </Style>
+                            </TextBlock.Style>
+                          </TextBlock>
                         </Button>
                       </Grid>
                     </DataTemplate>
@@ -1448,16 +1475,19 @@
               </StackPanel>
             </Border>
 
-            <!-- Importar / Exportar -->
+            <!-- Importar / Exportar / Reset -->
             <TextBlock Text="DADOS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,18,0,8" HorizontalAlignment="Left" Width="320"/>
             <Grid Width="320" HorizontalAlignment="Center">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="6" />
                 <ColumnDefinition Width="*" />
               </Grid.ColumnDefinitions>
               <Button x:Name="btnExportar" Grid.Column="0" Style="{StaticResource PremiumCardButtonStyle}" Content="Exportar" Click="btnExportar_Click" Height="38" FontSize="12"/>
               <Button x:Name="btnImportar" Grid.Column="2" Style="{StaticResource PremiumCardButtonStyle}" Content="Importar" Click="btnImportar_Click" Height="38" FontSize="12"/>
+              <Button x:Name="btnResetFabrica" Grid.Column="4" Style="{StaticResource PremiumRedButtonStyle}" Content="Reset de Fabrica" Click="btnResetFabrica_Click" Height="38" FontSize="11"/>
             </Grid>
 
             <!-- Card: DESENVOLVEDOR -->
