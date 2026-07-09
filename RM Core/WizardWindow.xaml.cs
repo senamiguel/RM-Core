@@ -116,8 +116,17 @@ namespace RM_Core
 
         private void btnReadFullPolicy_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new PrivacyPolicyWindow { Owner = this };
-            dlg.ShowDialog();
+            try
+            {
+                var dlg = new PrivacyPolicyWindow();
+                dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                dlg.Owner = this;
+                dlg.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Não foi possível abrir a política: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void btnSkip_Click(object sender, RoutedEventArgs e)
