@@ -324,31 +324,33 @@
           <TextBlock Text="Privacidade e Telemetria" FontSize="14" FontWeight="SemiBold" Foreground="#E6FFFFFF"/>
           <TextBlock Text="Resumo da política. Clique abaixo para ler o texto completo antes de aceitar." TextWrapping="Wrap" FontSize="11" Foreground="#80FFFFFF" Margin="0,4,0,0"/>
         </StackPanel>
-        <StackPanel Grid.Row="1">
-          <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12">
-            <StackPanel>
-              <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#E6FFFFFF" LineHeight="18">
-                <Run FontWeight="SemiBold" Text="O RM Core coleta telemetria anônima para entender como o aplicativo é usado e identificar oportunidades de melhoria."/>
-                <LineBreak/><LineBreak/>
-                <Run Text="• É coletado: "/><Run Text="eventos de uso anônimos (abas abertas, botões clicados), versão do app, versão do Windows, idioma do sistema, contagem de clientes e bases."/>
-                <LineBreak/><Run Text="• NÃO é coletado: "/><Run Text="nomes de clientes/bases, servidores, usuários, senhas, caminhos do RM nem conteúdo dos logs."/>
-                <LineBreak/><Run Text="• Armazenado em: "/><Run Text="%LocalAppData%\RM_Core\telemetry.log"/>
-                <LineBreak/><Run Text="• Finalidade: "/><Run Text="estatística de uso, sem compartilhamento ou venda."/>
-              </TextBlock>
-            </StackPanel>
-          </Border>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,4,0">
+          <StackPanel>
+            <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12">
+              <StackPanel>
+                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#E6FFFFFF" LineHeight="18">
+                  <Run FontWeight="SemiBold" Text="O RM Core coleta telemetria anônima para entender como o aplicativo é usado e identificar oportunidades de melhoria."/>
+                  <LineBreak/><LineBreak/>
+                  <Run Text="• É coletado: "/><Run Text="eventos de uso anônimos (abas abertas, botões clicados), versão do app, versão do Windows, idioma do sistema, contagem de clientes e bases."/>
+                  <LineBreak/><Run Text="• NÃO é coletado: "/><Run Text="nomes de clientes/bases, servidores, usuários, senhas, caminhos do RM nem conteúdo dos logs."/>
+                  <LineBreak/><Run Text="• Armazenado em: "/><Run Text="%LocalAppData%\RM_Core\telemetry.log"/>
+                  <LineBreak/><Run Text="• Finalidade: "/><Run Text="estatística de uso, sem compartilhamento ou venda."/>
+                </TextBlock>
+              </StackPanel>
+            </Border>
 
-          <Button x:Name="btnReadFullPolicy" Style="{StaticResource CardButtonStyle}" Content="Ler política completa" Click="btnReadFullPolicy_Click" Height="34" FontSize="11" Margin="0,12,0,0" HorizontalAlignment="Stretch"/>
+            <Button x:Name="btnReadFullPolicy" Style="{StaticResource CardButtonStyle}" Content="Ler política completa" Click="btnReadFullPolicy_Click" Height="34" FontSize="11" Margin="0,12,0,0" HorizontalAlignment="Stretch"/>
 
-          <Border x:Name="borderPrivacyAccept" Background="#0C4CAF50" BorderBrush="#1A4CAF50" BorderThickness="1" CornerRadius="8" Padding="15,10,15,10" Margin="0,14,0,0" MinHeight="60">
-            <StackPanel>
-              <CheckBox x:Name="chkPrivacyAccepted" Cursor="Hand" Checked="chkPrivacyAccepted_Changed" Unchecked="chkPrivacyAccepted_Changed" VerticalContentAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Left" Padding="6,4,0,4" MinHeight="32" MinWidth="280" Margin="0,0,0,0">
-                <TextBlock Text="EU ACEITO E ESTOU CIENTE" Foreground="#FFFFFF" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" Margin="6,0,0,0"/>
-              </CheckBox>
-              <TextBlock x:Name="txtPrivacyWarning" Text="Você precisa marcar a caixa acima para prosseguir." FontSize="10" Foreground="#FFB4A6" Margin="26,6,0,0" Visibility="Collapsed"/>
-            </StackPanel>
-          </Border>
-        </StackPanel>
+            <Border x:Name="borderPrivacyAccept" Background="#0C4CAF50" BorderBrush="#1A4CAF50" BorderThickness="1" CornerRadius="8" Padding="15,10,15,10" Margin="0,14,0,0" MinHeight="60">
+              <StackPanel>
+                <CheckBox x:Name="chkPrivacyAccepted" Cursor="Hand" Checked="chkPrivacyAccepted_Changed" Unchecked="chkPrivacyAccepted_Changed" VerticalContentAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Left" Padding="6,4,0,4" MinHeight="32" MinWidth="280" Margin="0,0,0,0">
+                  <TextBlock Text="EU ACEITO E ESTOU CIENTE" Foreground="#FFFFFF" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                </CheckBox>
+                <TextBlock x:Name="txtPrivacyWarning" Text="Você precisa marcar a caixa acima para prosseguir." FontSize="10" Foreground="#FFB4A6" Margin="26,6,0,0" Visibility="Collapsed"/>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
       </Grid>
 
       <!-- Página 7: Pronto -->
