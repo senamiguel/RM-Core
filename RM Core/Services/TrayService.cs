@@ -112,6 +112,21 @@ namespace RM_Core.Services
             itemIIS.Click += OnReiniciarIIS;
             menu.Items.Add(itemIIS);
 
+            // Abrir Clientes
+            var itemClientes = new ToolStripMenuItem("Abrir Clientes");
+            itemClientes.Click += (_, _) => _mainWindow.Dispatcher.BeginInvoke(new Action(() => _mainWindow.NavigateToClientes()));
+            menu.Items.Add(itemClientes);
+
+            // Abrir Gerenciador de Bases
+            var itemBases = new ToolStripMenuItem("Abrir Gerenciador de Bases");
+            itemBases.Click += (_, _) => _mainWindow.Dispatcher.BeginInvoke(new Action(() => _mainWindow.NavigateToBases()));
+            menu.Items.Add(itemBases);
+
+            // Verificar Atualizações
+            var itemUpdate = new ToolStripMenuItem("Verificar Atualizações");
+            itemUpdate.Click += (_, _) => _mainWindow.Dispatcher.BeginInvoke(new Action(() => _mainWindow.TriggerUpdateCheck()));
+            menu.Items.Add(itemUpdate);
+
             menu.Items.Add(new ToolStripSeparator());
 
             // Sair

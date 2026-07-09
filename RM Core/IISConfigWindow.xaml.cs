@@ -200,6 +200,22 @@ namespace RM_Core
             }
         }
 
+        private void btnAbrirIISManager_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "inetmgr.exe",
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Erro ao abrir o Gerenciador IIS: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private void btnSalvarRewrite_Click(object sender, RoutedEventArgs e)
         {
             if (_selectedSite == null) return;

@@ -878,8 +878,6 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="6" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="6" />
-                <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
 
               <!-- Profile ComboBox -->
@@ -913,15 +911,9 @@
               <Button x:Name="btnExportarCliente" Grid.Column="8" Width="36" Height="36" Margin="0,17,0,0"
                       Style="{StaticResource PremiumCardButtonStyle}"
                       ToolTip="Exportar este cliente" Click="btnExportarCliente_Click">
-                <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-              </Button>
-
-              <!-- Importar Ambientes Button -->
-              <Button x:Name="btnImportarAmbientes" Grid.Column="10" Width="36" Height="36" Margin="0,17,0,0"
-                      Style="{StaticResource PremiumCardButtonStyle}"
-                      ToolTip="Importar Ambientes" Click="btnImportarAmbientes_Click">
                 <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
               </Button>
+
             </Grid>
           </ikw:SimpleStackPanel>
 
@@ -941,7 +933,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="NOME DO CLIENTE"/>
                         <Button x:Name="btnToggleFavorito" Grid.Column="1" Width="22" Height="22" Background="Transparent" BorderThickness="0" Click="btnToggleFavorito_Click" ToolTip="Marcar como favorito" VerticalAlignment="Bottom">
-                          <TextBlock x:Name="iconFavorito" Text="&#xE1CE;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF"/>
+                          <TextBlock x:Name="iconFavorito" Text="&#xE735;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF"/>
                         </Button>
                       </Grid>
                       <TextBox x:Name="txtNomePerfil" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" Padding="6,0,6,0" VerticalContentAlignment="Center" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" CaretBrush="White"/>
@@ -1138,7 +1130,17 @@
               
               <!-- Connection List Section -->
               <TextBlock Text="CONEXÕES ATIVAS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,8"/>
-              <TextBox x:Name="txtSearchBase" Height="30" ui:ControlHelper.CornerRadius="6" ui:ControlHelper.PlaceholderText="Pesquisar base..." Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" Margin="0,0,0,6" TextChanged="txtSearchBase_TextChanged"/>
+              <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="6" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="txtSearchBase" Height="30" ui:ControlHelper.CornerRadius="6" ui:ControlHelper.PlaceholderText="Pesquisar base..." Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" TextChanged="txtSearchBase_TextChanged"/>
+                <Button x:Name="btnOrdenarBases" Grid.Column="2" Width="34" Height="30" Style="{StaticResource PremiumCardButtonStyle}" ToolTip="Ordenar A-Z" Click="btnOrdenarBases_Click">
+                  <TextBlock x:Name="txtSortIcon" Text="A-Z" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#E6FFFFFF"/>
+                </Button>
+              </Grid>
               <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Margin="0,0,0,10" ClipToBounds="True">
                 <ListBox x:Name="lstBases" Height="140" Background="Transparent" BorderThickness="0" 
                          SelectionChanged="lstBases_SelectionChanged">
@@ -1148,9 +1150,13 @@
                         <Grid.ColumnDefinitions>
                           <ColumnDefinition Width="Auto" />
                           <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Ellipse x:Name="colorDot" Width="10" Height="10" Fill="Transparent" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <TextBlock Grid.Column="1" Text="{Binding name}" VerticalAlignment="Center" Foreground="#E6FFFFFF"/>
+                        <Button Grid.Column="2" Width="18" Height="18" Background="Transparent" BorderThickness="0" Click="btnToggleBaseFavorito_Click" ToolTip="Favoritar base" VerticalAlignment="Center">
+                          <TextBlock Text="&#xE735;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#FFC107"/>
+                        </Button>
                       </Grid>
                     </DataTemplate>
                   </ListBox.ItemTemplate>
@@ -1160,16 +1166,8 @@
               <Grid Margin="0,0,0,16">
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="6" />
-                  <ColumnDefinition Width="Auto" />
-                  <ColumnDefinition Width="6" />
-                  <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Button x:Name="btnNovaBase" Grid.Column="0" Style="{StaticResource PremiumCardButtonStyle}" Content="+ Nova Base" Click="btnNovaBase_Click" HorizontalAlignment="Stretch" Height="34"/>
-                <Button x:Name="btnOrdenarBases" Grid.Column="2" Width="34" Height="34" Style="{StaticResource PremiumCardButtonStyle}" ToolTip="Ordenar A-Z" Click="btnOrdenarBases_Click">
-                  <TextBlock x:Name="txtSortIcon" Text="A-Z" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#E6FFFFFF"/>
-                </Button>
-                <Button x:Name="btnImportarAliases" Grid.Column="4" Style="{StaticResource PremiumCardButtonStyle}" Content="Importar Aliases" Click="btnImportarAliases_Click" HorizontalAlignment="Stretch" Height="34"/>
               </Grid>
 
               <!-- Detail Editor (hidden when no connection is selected) -->
@@ -1233,7 +1231,7 @@
                           <PasswordBox x:Name="pbRmPass" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" MinWidth="130"/>
                           <TextBox x:Name="txtRmPassVisible" Grid.Column="0" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,30,0" CaretBrush="White" Visibility="Collapsed" MinWidth="130"/>
                           <Button x:Name="btnToggleRmPass" Grid.Column="1" Width="28" Height="28" Margin="0,0,4,0" Background="Transparent" BorderThickness="0" Click="btnTogglePass_Click" Tag="rm" ToolTip="Mostrar/ocultar senha" VerticalAlignment="Center">
-                            <TextBlock x:Name="iconToggleRmPass" Text="&#xE8AF;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF"/>
+                            <TextBlock x:Name="iconToggleRmPass" Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF"/>
                           </Button>
                         </Grid>
                       </StackPanel>
@@ -1277,7 +1275,7 @@
                           <PasswordBox x:Name="pbDbPass" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" MinWidth="130"/>
                           <TextBox x:Name="txtDbPassVisible" Grid.Column="0" Height="34" ui:ControlHelper.CornerRadius="6" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,30,0" CaretBrush="White" Visibility="Collapsed" MinWidth="130"/>
                           <Button x:Name="btnToggleDbPass" Grid.Column="1" Width="28" Height="28" Margin="0,0,4,0" Background="Transparent" BorderThickness="0" Click="btnTogglePass_Click" Tag="db" ToolTip="Mostrar/ocultar senha" VerticalAlignment="Center">
-                            <TextBlock x:Name="iconToggleDbPass" Text="&#xE8AF;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF"/>
+                            <TextBlock x:Name="iconToggleDbPass" Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF"/>
                           </Button>
                         </Grid>
                       </StackPanel>
@@ -1332,7 +1330,7 @@
               <Button x:Name="btnSalvarBase" Grid.Column="0" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumPrimaryButtonStyle}" Content="Salvar Alterações" Click="btnSalvarBase_Click" FontWeight="SemiBold"/>
               <Button x:Name="btnTestarConexao" Grid.Column="2" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumCardButtonStyle}" Content="Testar Conexão" Click="btnTestarConexao_Click" FontWeight="SemiBold"/>
               <Button x:Name="btnDuplicarBase" Grid.Column="4" Width="38" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumCardButtonStyle}" ToolTip="Duplicar Base" Click="btnDuplicarBase_Click">
-                <TextBlock Text="&#xE1D6;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
               </Button>
               <Button x:Name="btnDeletarBase" Grid.Column="6" Width="38" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumRedButtonStyle}" ToolTip="Remover Alias" Click="btnDeletarBase_Click">
                 <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>

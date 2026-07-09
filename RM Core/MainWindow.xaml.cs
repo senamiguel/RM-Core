@@ -1203,6 +1203,27 @@ namespace RM_Core
             }
         }
 
+        // ---------------------------------------------------------------
+        // Public navigation methods (called from TrayService)
+        // ---------------------------------------------------------------
+        public void NavigateToClientes()
+        {
+            rbTabPerfil.IsChecked = true;
+            Tab_Click(rbTabPerfil, new RoutedEventArgs());
+        }
+
+        public void NavigateToBases()
+        {
+            NavigateToClientes();
+            gridClientSettingsForm.Visibility = Visibility.Collapsed;
+            gridAliasManagerForm.Visibility = Visibility.Visible;
+        }
+
+        public void TriggerUpdateCheck()
+        {
+            _ = CheckForUpdatesAsync();
+        }
+
         private void btnAliases_Click(object sender, RoutedEventArgs e)
         {
             AddLog("info", "Abrindo gerenciador de bases...");
@@ -2433,6 +2454,7 @@ namespace RM_Core
             }
             foreach (var alias in aliases)
             {
+                alias.IsFavorite = _appSettings.BaseFavoriteIds.Contains(alias.id);
                 if (_appSettings.BaseTagColors.TryGetValue(alias.id, out var color))
                     alias.TagColor = color;
             }
@@ -2456,6 +2478,7 @@ namespace RM_Core
             try
             {
                 _appSettings.FavoriteClientNames = profiles.Values.Where(p => p.IsFavorite).Select(p => p.Name).ToList();
+                _appSettings.BaseFavoriteIds = aliases.Where(a => a.IsFavorite).Select(a => a.id).ToList();
                 _appSettings.BaseTagColors = aliases.Where(a => !string.IsNullOrEmpty(a.TagColor)).ToDictionary(a => a.id, a => a.TagColor);
                 Directory.CreateDirectory(Path.GetDirectoryName(_appSettingsPath)!);
                 File.WriteAllText(_appSettingsPath, JsonSerializer.Serialize(_appSettings));
@@ -2487,8 +2510,7 @@ namespace RM_Core
             btnLimparTemp.IsEnabled = !loading;
             btnSalvarPerfil.IsEnabled = !loading;
             btnDeletarPerfil.IsEnabled = !loading;
-            btnImportarAmbientes.IsEnabled = !loading;
-            btnImportarAliases.IsEnabled = !loading;
+            // btnImportarAmbientes and btnImportarAliases removed
             btnGerenciarAliases.IsEnabled = !loading;
             btnVoltarCliente.IsEnabled = !loading;
             btnNovaBase.IsEnabled = !loading;
@@ -2655,6 +2677,7 @@ namespace RM_Core
                 selectedAlias.TagColor = tag;
                 UpdateColorTagSelectorUI(tag);
                 RefreshBaseListColorDots();
+                lstBases.Items.Refresh();
                 RefreshCbBaseColors();
             }
         }
@@ -2821,16 +2844,30 @@ namespace RM_Core
             AddLog("info", $"Cliente \"{profile.Name}\" {(profile.IsFavorite ? "marcado como favorito" : "removido dos favoritos")}.");
         }
 
+        private void btnToggleBaseFavorito_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is AliasConfig alias)
+            {
+                alias.IsFavorite = !alias.IsFavorite;
+                var starText = FindVisualChild<TextBlock>(btn);
+                if (starText != null)
+                {
+                    starText.Text = alias.IsFavorite ? "\uE734" : "\uE735";
+                }
+                SaveAppSettings();
+            }
+        }
+
         private void UpdateFavoritoIcon(bool isFavorite)
         {
             if (isFavorite)
             {
-                iconFavorito.Text = "\uE1CF";
+                iconFavorito.Text = "\uE734";
                 iconFavorito.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 193, 7));
             }
             else
             {
-                iconFavorito.Text = "\uE1CE";
+                iconFavorito.Text = "\uE735";
                 iconFavorito.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(128, 128, 128));
             }
         }
@@ -3630,6 +3667,7 @@ namespace RM_Core
         public bool   FirstRunComplete     { get; set; } = false;
         public string RmInstallPath        { get; set; } = string.Empty; // pasta <versao>\Bin
         public List<string> FavoriteClientNames { get; set; } = new();
+        public List<string> BaseFavoriteIds { get; set; } = new();
         public Dictionary<string, string> BaseTagColors { get; set; } = new();
     }
 
