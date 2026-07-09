@@ -309,7 +309,49 @@
         </StackPanel>
       </Grid>
 
-      <!-- Página 6: Pronto -->
+      <!-- Página 6: Privacidade (LGPD) -->
+      <Grid x:Name="pagePrivacy" Visibility="Collapsed">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+          <TextBlock Text="Privacidade e Telemetria" FontSize="14" FontWeight="SemiBold" Foreground="#E6FFFFFF"/>
+          <TextBlock Text="Leia com atenção antes de prosseguir." TextWrapping="Wrap" FontSize="11" Foreground="#80FFFFFF" Margin="0,4,0,0"/>
+        </StackPanel>
+        <StackPanel Grid.Row="1">
+          <Border Background="#0CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12">
+            <StackPanel>
+              <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#E6FFFFFF" LineHeight="18">
+                <Run FontWeight="SemiBold" Text="O RM Core coleta telemetria anônima para entender como o aplicativo é usado e identificar oportunidades de melhoria."/>
+                <LineBreak/><LineBreak/>
+                <Run Text="Conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018 — LGPD), informamos que:"/>
+                <LineBreak/><LineBreak/>
+                <Run Text="  • Identificação: "/><Run Text="um identificador aleatório (GUID) gerado na primeira execução. Não contém nome, e-mail, IP, hostname ou qualquer dado pessoal."/>
+                <LineBreak/><Run Text="  • Dados coletados: "/><Run Text="eventos de uso anônimos (abas abertas, botões clicados), versão do app, versão do sistema operacional, idioma do sistema, contagem de clientes e bases cadastradas."/>
+                <LineBreak/><Run Text="  • Dados NÃO coletados: "/><Run Text="nomes de clientes, nomes de bases, servidores, usuários, senhas, caminhos de instalação do RM nem conteúdo dos logs."/>
+                <LineBreak/><Run Text="  • Armazenamento local: "/><Run Text="os eventos são gravados em arquivo na pasta do aplicativo (%LocalAppData%\RM_Core\telemetry.log)."/>
+                <LineBreak/><Run Text="  • Finalidade: "/><Run Text="exclusivamente estatística de uso para priorização de melhorias. Os dados nunca são vendidos, compartilhados ou usados para publicidade."/>
+                <LineBreak/><LineBreak/>
+                <Run FontStyle="Italic" Foreground="#80FFFFFF" Text="O envio remoto (quando habilitado em versão futura) seguirá os mesmos princípios: dados agregados e anônimos, sem qualquer informação que permita identificar você, sua empresa ou seus clientes."/>
+              </TextBlock>
+            </StackPanel>
+          </Border>
+
+          <Border x:Name="borderPrivacyAccept" Background="#0C4CAF50" BorderBrush="#1A4CAF50" BorderThickness="1" CornerRadius="8" Padding="15,12,15,12" Margin="0,14,0,0">
+            <StackPanel>
+              <CheckBox x:Name="chkPrivacyAccepted" Foreground="White" FontSize="12" FontWeight="SemiBold" Cursor="Hand" Checked="chkPrivacyAccepted_Changed" Unchecked="chkPrivacyAccepted_Changed">
+                <TextBlock TextWrapping="Wrap" Foreground="#E6FFFFFF">
+                  <Run Text="Li e estou ciente. "/><Run Text="Aceito" FontWeight="Bold" TextDecorations="Underline"/><Run Text=" a coleta anônima de telemetria para fins de melhoria do aplicativo."/>
+                </TextBlock>
+              </CheckBox>
+              <TextBlock x:Name="txtPrivacyWarning" Text="Você precisa marcar a caixa acima para prosseguir." FontSize="10" Foreground="#FFB4A6" Margin="22,4,0,0" Visibility="Collapsed"/>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Grid>
+
+      <!-- Página 7: Pronto -->
       <Grid x:Name="pageDone" Visibility="Collapsed">
         <StackPanel VerticalAlignment="Center">
           <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="56" Foreground="#4CAF50" HorizontalAlignment="Center" Margin="0,0,0,18"/>

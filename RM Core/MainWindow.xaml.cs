@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using RM_Core.Data;
 using RM_Core.Data.Models;
 using RM_Core.Services;
+using RM_Core.Services.Telemetry;
 
 namespace RM_Core
 {
@@ -35,6 +36,10 @@ namespace RM_Core
 
         // TrayService — system tray / lifecycle management
         private TrayService _trayService = null!;
+
+        // Telemetry — anonymous usage events
+        private RM_Core.Services.Telemetry.TelemetryService? _telemetry;
+        private DateTime _sessionStart = DateTime.UtcNow;
 
         // Pending update info (set by background check on startup)
         private UpdateInfo? _pendingUpdate;
@@ -84,10 +89,25 @@ namespace RM_Core
             InitializeComponent();
             listLogs.ItemsSource = logs;
             logs.CollectionChanged += Logs_CollectionChanged;
+            LoadAppSettings();
             InitializeSelectors();
             LoadAliases();
             InitializeBasesTab();
             LoadProfiles();
+
+            _telemetry = new RM_Core.Services.Telemetry.TelemetryService(
+                installId: _appSettings.InstallId,
+                appVersion: "1.0.0",
+                sinks: new List<RM_Core.Services.Telemetry.ITelemetrySink>
+                {
+                    new RM_Core.Services.Telemetry.LocalFileTelemetrySink()
+                },
+                clientCountProvider: () => profiles.Count,
+                baseCountProvider: () => aliases.Count);
+            _telemetry.Track("app_start", new Dictionary<string, object>
+            {
+                ["first_run"] = !_appSettings.FirstRunComplete
+            });
 
             // Initialize tray service (must come after InitializeComponent)
             _trayService = new TrayService(this);
@@ -995,6 +1015,7 @@ namespace RM_Core
 
         private async void btnIniciarCompleto_Click(object sender, RoutedEventArgs e)
         {
+            _telemetry?.Track("feature_used", new Dictionary<string, object> { ["feature"] = "iniciar_completo" });
             await IniciarRMPlusHostAsync();
         }
 
@@ -1126,6 +1147,7 @@ namespace RM_Core
 
         private void btnDerrubarTudo_Click(object sender, RoutedEventArgs e)
         {
+            _telemetry?.Track("feature_used", new Dictionary<string, object> { ["feature"] = "derrubar_tudo" });
             var confirm = MessageBox.Show("Deseja realmente derrubar todos os processos relacionados ao RM em execução?", "Confirmar Operação", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (confirm == MessageBoxResult.No) return;
 
@@ -1216,7 +1238,17 @@ namespace RM_Core
 
         private void btnReconfigurar_Click(object sender, RoutedEventArgs e)
         {
+            _telemetry?.Track("feature_used", new Dictionary<string, object> { ["feature"] = "wizard_reconfigurar" });
+
             RunFirstRunWizard(fromButton: true);
+        }
+
+        private void btnReverPrivacidade_Click(object sender, RoutedEventArgs e)
+        {
+            _telemetry?.Track("feature_used", new Dictionary<string, object> { ["feature"] = "rever_privacidade" });
+
+            var wiz = new WizardWindow { Owner = this };
+            wiz.ShowDialog();
         }
 
         private void tsAppSetting_Toggled(object sender, RoutedEventArgs e)
@@ -1459,6 +1491,7 @@ namespace RM_Core
 
         private void btnConfigIIS_Click(object sender, RoutedEventArgs e)
         {
+            _telemetry?.Track("feature_used", new Dictionary<string, object> { ["feature"] = "iis_config" });
             try
             {
                 AddLog("info", "Abrindo Configuração IIS...");
@@ -2312,6 +2345,21 @@ namespace RM_Core
             }
         }
 
+        protected override void OnClosed(EventArgs e)
+        {
+            try
+            {
+                _telemetry?.Track("app_close", new Dictionary<string, object>
+                {
+                    ["session_sec"] = (int)(DateTime.UtcNow - _sessionStart).TotalSeconds
+                });
+                _telemetry?.FlushSync();
+                _telemetry?.Dispose();
+            }
+            catch { }
+            base.OnClosed(e);
+        }
+
         // ---------------------------------------------------------------
         // Window position / size persistence
         // ---------------------------------------------------------------
@@ -2319,7 +2367,6 @@ namespace RM_Core
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             RestoreWindowSettings();
-            LoadAppSettings();
             ApplyStartWithWindowsSetting(_appSettings.StartWithWindows);
 
             // Se for a primeira vez, mostra o wizard de configuração.
@@ -2366,6 +2413,15 @@ namespace RM_Core
             _appSettings.StartWithWindows     = wiz.StartWithWindows;
             _appSettings.StartMinimized       = wiz.StartMinimized;
             _appSettings.RmInstallPath        = wiz.SelectedInstallPath;
+            _appSettings.PrivacyAccepted      = wiz.PrivacyAccepted;
+
+            if (wiz.PrivacyAccepted)
+            {
+                _telemetry?.Track("privacy_accepted", new Dictionary<string, object>
+                {
+                    ["country"] = System.Globalization.CultureInfo.CurrentUICulture.Name
+                });
+            }
 
             // sincroniza os toggles da aba Sobre
             _isSyncing = true;
@@ -2524,11 +2580,24 @@ namespace RM_Core
         {
             try
             {
-                if (!File.Exists(_appSettingsPath)) return;
-                var loaded = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(_appSettingsPath));
-                if (loaded != null) _appSettings = loaded;
+                if (File.Exists(_appSettingsPath))
+                {
+                    var loaded = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(_appSettingsPath));
+                    if (loaded != null) _appSettings = loaded;
+                }
             }
             catch { /* keep defaults */ }
+
+            if (string.IsNullOrEmpty(_appSettings.InstallId))
+            {
+                _appSettings.InstallId = Guid.NewGuid().ToString("N");
+                try
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(_appSettingsPath)!);
+                    File.WriteAllText(_appSettingsPath, JsonSerializer.Serialize(_appSettings));
+                }
+                catch { /* non-critical */ }
+            }
 
             // Apply favorites and tag colors to in-memory objects
             foreach (var kv in profiles)
@@ -2572,7 +2641,10 @@ namespace RM_Core
                 Directory.CreateDirectory(Path.GetDirectoryName(_appSettingsPath)!);
                 File.WriteAllText(_appSettingsPath, JsonSerializer.Serialize(_appSettings));
             }
-            catch { /* non-critical — ignore */ }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"SaveAppSettings falhou: {ex.Message}");
+            }
         }
 
         // ---------------------------------------------------------------
@@ -2694,6 +2766,13 @@ namespace RM_Core
                 {
                     AtualizarPanelVersao();
                 }
+
+                string? tabName = rb == rbTabInicio ? "home"
+                                : rb == rbTabPerfil ? "clientes"
+                                : rb == rbTabLogs   ? "logs"
+                                : rb == rbTabSobre  ? "sobre"
+                                : null;
+                if (tabName != null) _telemetry?.Track("tab_opened", new Dictionary<string, object> { ["tab"] = tabName });
             }
         }
 
@@ -3223,6 +3302,7 @@ namespace RM_Core
 
         private void btnNovaBase_Click(object sender, RoutedEventArgs e)
         {
+            _telemetry?.Track("feature_used", new Dictionary<string, object> { ["feature"] = "nova_base" });
             string activeClient = cbPerfis.SelectedItem?.ToString()
                                  ?? cbClienteAtivo.SelectedItem?.ToString()
                                  ?? txtNomePerfil.Text.Trim();
@@ -3787,6 +3867,8 @@ namespace RM_Core
 
         private void btnResetFabrica_Click(object sender, RoutedEventArgs e)
         {
+            _telemetry?.Track("feature_used", new Dictionary<string, object> { ["feature"] = "reset_factory" });
+
             var result = MessageBox.Show("Tem certeza? Todos os dados (clientes, bases, configuracoes) serao perdidos.", "Reset de Fabrica", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (result != MessageBoxResult.Yes) return;
 
@@ -3999,6 +4081,7 @@ namespace RM_Core
         public bool   StartWithWindows     { get; set; } = false;
         public bool   StartMinimized       { get; set; } = false;
         public bool   FirstRunComplete     { get; set; } = false;
+        public bool   PrivacyAccepted     { get; set; } = false;
         public string RmInstallPath        { get; set; } = string.Empty; // pasta <versao>\Bin
         public List<string> FavoriteClientNames { get; set; } = new();
         public List<string> BaseFavoriteIds { get; set; } = new();
@@ -4007,6 +4090,7 @@ namespace RM_Core
         public string DefaultBaseId  { get; set; } = string.Empty;
         public string LastClient     { get; set; } = string.Empty;
         public string LastBaseId     { get; set; } = string.Empty;
+        public string InstallId      { get; set; } = string.Empty;
     }
 
     public class LogEntry

@@ -22,9 +22,10 @@ namespace RM_Core
         public bool CloseToTray { get; private set; } = true;
         public bool StartWithWindows { get; private set; } = false;
         public bool StartMinimized { get; private set; } = false;
+        public bool PrivacyAccepted { get; private set; } = false;
         public bool WizardCompleted { get; private set; } = false;
 
-        private int _currentPage = 0; // 0..5
+        private int _currentPage = 0; // 0..6
         private readonly Grid[] _pages;
         private readonly (string title, string subtitle)[] _steps = new[]
         {
@@ -33,6 +34,7 @@ namespace RM_Core
             ("Cliente padrão",           "Crie o primeiro cliente"),
             ("Base padrão",              "Configure a primeira conexão de banco"),
             ("Comportamento",            "Como o app deve se comportar"),
+            ("Privacidade e Telemetria", "Leia com atenção antes de prosseguir"),
             ("Pronto",                   "Revise e conclua"),
         };
 
@@ -40,7 +42,7 @@ namespace RM_Core
         {
             InitializeComponent();
 
-            _pages = new[] { pageWelcome, pageInstall, pageClient, pageBase, pageBehavior, pageDone };
+            _pages = new[] { pageWelcome, pageInstall, pageClient, pageBase, pageBehavior, pagePrivacy, pageDone };
 
             DetectInstallPaths();
             LoadVersionsForClient();
@@ -104,6 +106,12 @@ namespace RM_Core
             if (_currentPage > 0) ShowPage(_currentPage - 1);
         }
 
+        private void chkPrivacyAccepted_Changed(object sender, RoutedEventArgs e)
+        {
+            if (chkPrivacyAccepted.IsChecked == true)
+                txtPrivacyWarning.Visibility = Visibility.Collapsed;
+        }
+
         private void btnSkip_Click(object sender, RoutedEventArgs e)
         {
             var r = MessageBox.Show(
@@ -156,6 +164,16 @@ namespace RM_Core
                     }
                     return true;
 
+                case 5: // Privacy (LGPD)
+                    if (chkPrivacyAccepted.IsChecked != true)
+                    {
+                        txtPrivacyWarning.Visibility = Visibility.Visible;
+                        MessageBox.Show("Você precisa aceitar a política de privacidade para continuar.", "Política de privacidade", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return false;
+                    }
+                    txtPrivacyWarning.Visibility = Visibility.Collapsed;
+                    return true;
+
                 default:
                     return true;
             }
@@ -186,6 +204,10 @@ namespace RM_Core
                     CloseToTray       = tsWizCloseToTray.IsOn;
                     StartWithWindows  = tsWizStartWithWindows.IsOn;
                     StartMinimized    = tsWizStartMinimized.IsOn;
+                    break;
+
+                case 5: // Privacy
+                    PrivacyAccepted   = chkPrivacyAccepted.IsChecked == true;
                     break;
             }
         }
