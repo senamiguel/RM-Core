@@ -59,6 +59,22 @@ namespace RM_Core.Services
                             add.SetAttributeValue("value", (apiPort + 1).ToString());
                     }
 
+                    // Increment ports inside WCF endpoints / baseAddresses if present
+                    foreach (var elem in configXml.Descendants())
+                    {
+                        foreach (var attr in elem.Attributes().ToList())
+                        {
+                            if (attr.Name.LocalName.Equals("baseAddress", StringComparison.OrdinalIgnoreCase) ||
+                                attr.Name.LocalName.Equals("address", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (attr.Value.Contains(":8050", StringComparison.OrdinalIgnoreCase))
+                                    attr.Value = attr.Value.Replace(":8050", ":8051");
+                                else if (attr.Value.Contains(":8051", StringComparison.OrdinalIgnoreCase))
+                                    attr.Value = attr.Value.Replace(":8051", ":8052");
+                            }
+                        }
+                    }
+
                     configXml.Save(host1Config);
                     return (true, "Dual Host instalado com sucesso: RM.Host1.exe e RM.Host1.exe.config criados com portas incrementadas.");
                 }

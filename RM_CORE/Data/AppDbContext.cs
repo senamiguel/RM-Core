@@ -13,9 +13,11 @@ namespace RM_Core.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
-            string dbFolder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "RM_Core");
+            string? customDir = Environment.GetEnvironmentVariable("RMCORE_DATA_DIR");
+            string dbFolder = !string.IsNullOrEmpty(customDir)
+                ? customDir
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RM_Core");
+
             if (!Directory.Exists(dbFolder))
             {
                 Directory.CreateDirectory(dbFolder);

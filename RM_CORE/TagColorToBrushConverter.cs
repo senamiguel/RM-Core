@@ -9,7 +9,7 @@ namespace RM_Core
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            string color = value as string;
+            string? color = value as string;
             return color switch
             {
                 "green"  => new SolidColorBrush(System.Windows.Media.Color.FromRgb(76, 175, 80)),

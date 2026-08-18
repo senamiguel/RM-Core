@@ -39,9 +39,10 @@ namespace RM_Core.Services.Telemetry
             _clientCountProvider = clientCountProvider;
             _baseCountProvider = baseCountProvider;
 
-            string appData = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "RM_Core");
+            string? customDataDir = Environment.GetEnvironmentVariable("RMCORE_DATA_DIR");
+            string appData = !string.IsNullOrEmpty(customDataDir)
+                ? customDataDir
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RM_Core");
             Directory.CreateDirectory(appData);
             _queuePath = Path.Combine(appData, "telemetry_queue.json");
 

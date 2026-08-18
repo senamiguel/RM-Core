@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <RootNamespace>RM_Core.Tests</RootNamespace>
+    <AssemblyName>RM_CORE.Tests</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <LangVersion>latest</LangVersion>
+    <!--
+      NAO habilitamos <UseWPF> de proposito - ele traria System.Windows.Automation
+      para dentro do escopo e iria conflitar com FlaUI.Core.AutomationElements.
+      O test runner nao renderiza WPF, apenas dirige o SUT (RM_CORE.exe) via FlaUI.
+    -->
+  </PropertyGroup>
+
+  <!--
+    Evita que o implicit using traga "System.Windows.Forms" e seus tipos
+    (Application, TextBox) para o escopo - o que conflita com FlaUI.
+  -->
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="FlaUI.Core" Version="4.0.0" />
+    <PackageReference Include="FlaUI.UIA3" Version="4.0.0" />
+    <PackageReference Include="System.IO.Abstractions" Version="21.0.29" />
+    <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Apontamento para o build do SUT (System Under Test).
+      Em CI/Windows Sandbox o caminho vem do .wsb mapeado (C:\RMCoreBuild);
+      em execucao local na maquina host o MSBuild resolve relativo.
+    -->
+    <None Include="..\RM_CORE\bin\Debug\net9.0-windows10.0.18362.0\**\*.*"
+          Link="AppBuild\%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest"
+          Condition="Exists('..\RM_CORE\bin\Debug\net9.0-windows10.0.18362.0\RM_CORE.exe')" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
+    <DefineConstants>$(DefineConstants);DISABLE_FL_AUI_TESTS</DefineConstants>
+  </PropertyGroup>
+
+</Project>

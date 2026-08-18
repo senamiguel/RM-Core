@@ -25,14 +25,16 @@ namespace RM_Core
         private System.Collections.ObjectModel.ObservableCollection<LogEntry> logs = new System.Collections.ObjectModel.ObservableCollection<LogEntry>();
 
         private System.Collections.Generic.Dictionary<string, ProfileSettings> profiles = new System.Collections.Generic.Dictionary<string, ProfileSettings>();
-        private string profilesFilePath = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "RM_Core", "profiles.json");
-        private string aliasesFilePath = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "RM_Core", "aliases.json");
+        private string profilesFilePath = System.IO.Path.Combine(GetAppDataDir(), "profiles.json");
+        private string aliasesFilePath = System.IO.Path.Combine(GetAppDataDir(), "aliases.json");
         private System.Collections.ObjectModel.ObservableCollection<AliasConfig> aliases = new System.Collections.ObjectModel.ObservableCollection<AliasConfig>();
         private System.Collections.ObjectModel.ObservableCollection<AliasConfig> filteredAliases = new System.Collections.ObjectModel.ObservableCollection<AliasConfig>();
         private bool _isSyncing = false;
         private bool _isOperationRunning = false;
         private bool _sortBasesAsc = true;
         private string _logSearchTerm = "";
+        private string? _editingClientOriginalName = null;
+        private bool _isCreatingNewClient = false;
 
         // TrayService — system tray / lifecycle management
         private TrayService _trayService = null!;
@@ -46,15 +48,21 @@ namespace RM_Core
         private bool _updateCheckDone = false;
         private bool _updateCheckFailed = false;
 
+        public static string GetAppDataDir()
+        {
+            string? customDir = Environment.GetEnvironmentVariable("RMCORE_DATA_DIR");
+            string dir = !string.IsNullOrEmpty(customDir)
+                ? customDir
+                : System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "RM_Core");
+            if (!System.IO.Directory.Exists(dir)) System.IO.Directory.CreateDirectory(dir);
+            return dir;
+        }
+
         // Window state persistence path
-        private readonly string _windowSettingsPath = System.IO.Path.Combine(
-            System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
-            "RM_Core", "window_settings.json");
+        private readonly string _windowSettingsPath = System.IO.Path.Combine(GetAppDataDir(), "window_settings.json");
 
         // App settings (toggle persistido em JSON)
-        private readonly string _appSettingsPath = System.IO.Path.Combine(
-            System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
-            "RM_Core", "app_settings.json");
+        private readonly string _appSettingsPath = System.IO.Path.Combine(GetAppDataDir(), "app_settings.json");
         private AppSettings _appSettings = new AppSettings();
 
         public bool IsExiting { get; set; } = false;
@@ -63,9 +71,7 @@ namespace RM_Core
         {
             try
             {
-                string appData = System.IO.Path.Combine(
-                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
-                    "RM_Core");
+                string appData = GetAppDataDir();
                 string flagPath = System.IO.Path.Combine(appData, "rmcore.delete_on_startup");
                 if (!System.IO.File.Exists(flagPath)) return;
 
@@ -85,44 +91,52 @@ namespace RM_Core
 
         public MainWindow()
         {
-            ProcessPendingDeletes();
-            InitializeComponent();
-            listLogs.ItemsSource = logs;
-            logs.CollectionChanged += Logs_CollectionChanged;
-            LoadAppSettings();
-            InitializeSelectors();
-            LoadAliases();
-            InitializeBasesTab();
-            LoadProfiles();
-
-            _telemetry = new RM_Core.Services.Telemetry.TelemetryService(
-                installId: _appSettings.InstallId,
-                appVersion: "1.0.0",
-                sinks: new List<RM_Core.Services.Telemetry.ITelemetrySink>
-                {
-                    new RM_Core.Services.Telemetry.LocalFileTelemetrySink()
-                },
-                clientCountProvider: () => profiles.Count,
-                baseCountProvider: () => aliases.Count);
-            _telemetry.Track("app_start", new Dictionary<string, object>
+            _isSyncing = true;
+            try
             {
-                ["first_run"] = !_appSettings.FirstRunComplete
-            });
+                ProcessPendingDeletes();
+                InitializeComponent();
+                listLogs.ItemsSource = logs;
+                logs.CollectionChanged += Logs_CollectionChanged;
+                LoadAppSettings();
+                InitializeSelectors();
+                LoadAliases();
+                InitializeBasesTab();
+                LoadProfiles();
 
-            // Initialize tray service (must come after InitializeComponent)
-            _trayService = new TrayService(this);
+                _telemetry = new RM_Core.Services.Telemetry.TelemetryService(
+                    installId: _appSettings.InstallId,
+                    appVersion: "Alpha-0.6.7",
+                    sinks: new List<RM_Core.Services.Telemetry.ITelemetrySink>
+                    {
+                        new RM_Core.Services.Telemetry.LocalFileTelemetrySink()
+                    },
+                    clientCountProvider: () => profiles.Count,
+                    baseCountProvider: () => aliases.Count);
+                _telemetry.Track("app_start", new Dictionary<string, object>
+                {
+                    ["first_run"] = !_appSettings.FirstRunComplete
+                });
 
-            // Background update check — never blocks the UI thread
-            _ = Task.Run(CheckForUpdatesAsync);
+                // Initialize tray service (must come after InitializeComponent)
+                _trayService = new TrayService(this);
 
-            // Restore window position/size from persisted settings
-            Loaded += MainWindow_Loaded;
+                // Background update check — never blocks the UI thread
+                _ = Task.Run(CheckForUpdatesAsync);
 
-            // Populate service status on startup
-            AtualizarStatusServicos();
+                // Restore window position/size from persisted settings
+                Loaded += MainWindow_Loaded;
 
-            // Set version text dynamically to reference the control
-            txtVersaoApp.Text = "Versão 1.0.0";
+                // Populate service status on startup
+                AtualizarStatusServicos();
+
+                // Set version text dynamically to reference the control
+                if (txtVersaoApp != null) txtVersaoApp.Text = "Versão Alpha-0.6.7";
+            }
+            finally
+            {
+                _isSyncing = false;
+            }
         }
 
         private void InitializeSelectors()
@@ -278,7 +292,9 @@ namespace RM_Core
                     // Delete aliases in db that are no longer in the list
                     foreach (var dbAl in dbAliases)
                     {
-                        if (!aliases.Any(a => a.id == dbAl.Id.ToString()))
+                        var ambOwner = dbAmbientes.FirstOrDefault(a => a.Id == dbAl.AmbienteId);
+                        string ambName = ambOwner?.Nome ?? string.Empty;
+                        if (!aliases.Any(a => a.id == dbAl.Id.ToString() || (a.name.Equals(dbAl.Nome, StringComparison.OrdinalIgnoreCase) && a.client.Equals(ambName, StringComparison.OrdinalIgnoreCase))))
                         {
                             db.Aliases.Remove(dbAl);
                         }
@@ -304,14 +320,17 @@ namespace RM_Core
                         }
                         
                         int aliasId = 0;
-                        if (alias.id != null && alias.id.Length < 10)
+                        if (int.TryParse(alias.id, out int parsedId) && parsedId > 0)
                         {
-                            int.TryParse(alias.id, out aliasId);
+                            aliasId = parsedId;
                         }
                         
-                        var existing = dbAliases.FirstOrDefault(a => a.Id == aliasId && aliasId != 0);
+                        var existing = (aliasId > 0 ? dbAliases.FirstOrDefault(a => a.Id == aliasId) : null)
+                                       ?? dbAliases.FirstOrDefault(a => a.Nome.Equals(alias.name, StringComparison.OrdinalIgnoreCase) && a.AmbienteId == amb.Id);
+
                         if (existing != null)
                         {
+                            alias.id = existing.Id.ToString();
                             existing.Nome = alias.name;
                             existing.BaseName = alias.Base;
                             existing.AmbienteId = amb.Id;
@@ -366,44 +385,46 @@ namespace RM_Core
             }
         }
 
-        private void UpdateAliasesUI(string clientName)
+        private void UpdateAliasesUI(string clientName, string? preselectedBaseName = null)
         {
             cbAliasDB.SelectionChanged -= cbAliasDB_SelectionChanged;
             cbBase.SelectionChanged -= cbBase_SelectionChanged;
 
+            string previouslySelected = preselectedBaseName
+                ?? (cbBase.SelectedItem is AliasConfig ac ? ac.name : cbBase.SelectedItem?.ToString())
+                ?? (cbAliasDB.SelectedItem?.ToString())
+                ?? (profiles.TryGetValue(clientName, out var p) ? p.Alias : string.Empty)
+                ?? string.Empty;
+
             cbAliasDB.Items.Clear();
             cbBase.Items.Clear();
 
-            string targetVersion = string.Empty;
-            if (profiles.TryGetValue(clientName, out var profile))
-            {
-                targetVersion = profile.RmVersion;
-            }
-
-            var matched = new List<AliasConfig>();
-            var unmatched = new List<AliasConfig>();
+            AliasConfig? itemToSelect = null;
 
             foreach (var alias in aliases)
             {
                 if (alias.client.Equals(clientName, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (string.IsNullOrEmpty(targetVersion) || alias.dbVersion == targetVersion)
-                        matched.Add(alias);
-                    else
-                        unmatched.Add(alias);
+                    cbAliasDB.Items.Add(alias.name);
+                    cbBase.Items.Add(alias);
+
+                    if (!string.IsNullOrEmpty(previouslySelected) && alias.name.Equals(previouslySelected, StringComparison.OrdinalIgnoreCase))
+                    {
+                        itemToSelect = alias;
+                    }
                 }
             }
 
-            // Se versao definida, SÓ mostra bases dessa versao (sem fallback pra unmatched)
-            var items = matched;
-            foreach (var alias in items)
+            if (itemToSelect == null && cbBase.Items.Count > 0)
             {
-                cbAliasDB.Items.Add(alias.name);
-                cbBase.Items.Add(alias);
+                itemToSelect = cbBase.Items[0] as AliasConfig;
             }
 
-            cbAliasDB_SelectionChanged(sender: null!, e: null!);
-            cbBase_SelectionChanged(sender: null!, e: null!);
+            if (itemToSelect != null)
+            {
+                cbBase.SelectedItem = itemToSelect;
+                cbAliasDB.SelectedItem = itemToSelect.name;
+            }
 
             cbAliasDB.SelectionChanged += cbAliasDB_SelectionChanged;
             cbBase.SelectionChanged += cbBase_SelectionChanged;
@@ -420,37 +441,13 @@ namespace RM_Core
             string activeClient = cbPerfis.SelectedItem?.ToString() ?? cbClienteAtivo.SelectedItem?.ToString() ?? string.Empty;
             if (string.IsNullOrEmpty(activeClient)) return;
 
-            cbAliasDB.SelectionChanged -= cbAliasDB_SelectionChanged;
-            cbBase.SelectionChanged -= cbBase_SelectionChanged;
-
-            cbAliasDB.Items.Clear();
-            cbBase.Items.Clear();
-            var matched = new List<AliasConfig>();
-            var unmatched = new List<AliasConfig>();
-            foreach (var alias in aliases)
+            if (!string.IsNullOrEmpty(selectedVersion) && profiles.TryGetValue(activeClient, out var prof))
             {
-                if (alias.client.Equals(activeClient, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (string.IsNullOrEmpty(selectedVersion) || alias.dbVersion == selectedVersion)
-                        matched.Add(alias);
-                    else
-                        unmatched.Add(alias);
-                }
+                prof.RmVersion = selectedVersion;
+                SaveProfiles();
             }
 
-            var items = matched;
-            foreach (var alias in items)
-            {
-                cbAliasDB.Items.Add(alias.name);
-                cbBase.Items.Add(alias);
-            }
-
-
-
-            cbAliasDB.SelectionChanged += cbAliasDB_SelectionChanged;
-            cbBase.SelectionChanged += cbBase_SelectionChanged;
-
-            Dispatcher.BeginInvoke(new Action(() => RefreshCbBaseColors()));
+            UpdateAliasesUI(activeClient);
         }
 
         private void LoadProfiles()
@@ -517,10 +514,20 @@ namespace RM_Core
                 SaveProfiles();
             }
 
+            foreach (var kv in profiles)
+                kv.Value.IsFavorite = _appSettings.FavoriteClientNames.Contains(kv.Key);
+            foreach (var alias in aliases)
+            {
+                alias.IsFavorite = _appSettings.BaseFavoriteIds.Contains(alias.id);
+                if (_appSettings.BaseTagColors.TryGetValue(alias.id, out var color))
+                    alias.TagColor = color;
+            }
+
             UpdateProfilesUI();
+            ApplyDefaultOrLast();
         }
 
-        private void SaveProfiles()
+        private void SaveProfiles(string? oldName = null, string? newName = null)
         {
             try
             {
@@ -531,6 +538,17 @@ namespace RM_Core
                     var dbAmbientes = db.Ambientes.ToList();
                     var dbConfigs = db.AmbienteConfigs.ToList();
                     
+                    // If renaming, update the old entity name first so it doesn't get deleted
+                    if (!string.IsNullOrEmpty(oldName) && !string.IsNullOrEmpty(newName) && oldName != newName)
+                    {
+                        var targetAmb = dbAmbientes.FirstOrDefault(a => a.Nome == oldName);
+                        if (targetAmb != null)
+                        {
+                            targetAmb.Nome = newName;
+                            targetAmb.FullName = newName;
+                        }
+                    }
+
                     // Delete environments in db that are no longer in 'profiles'
                     foreach (var dbAmb in dbAmbientes)
                     {
@@ -615,10 +633,16 @@ namespace RM_Core
             }
         }
 
-        private void UpdateProfilesUI()
+        private void UpdateProfilesUI(string? preselectedName = null)
         {
             cbPerfis.SelectionChanged -= cbPerfis_SelectionChanged;
             cbClienteAtivo.SelectionChanged -= cbClienteAtivo_SelectionChanged;
+
+            string selected = preselectedName 
+                ?? cbPerfis.SelectedItem?.ToString() 
+                ?? cbClienteAtivo.SelectedItem?.ToString() 
+                ?? _appSettings.LastClient 
+                ?? string.Empty;
 
             cbPerfis.Items.Clear();
             cbClienteAtivo.Items.Clear();
@@ -631,11 +655,24 @@ namespace RM_Core
                 cbClienteAssociado.Items.Add(key);
             }
 
+            if (!string.IsNullOrEmpty(selected) && profiles.ContainsKey(selected))
+            {
+                cbPerfis.SelectedItem = selected;
+                cbClienteAtivo.SelectedItem = selected;
+                cbClienteAssociado.SelectedItem = selected;
+            }
+            else if (profiles.Count > 0)
+            {
+                string first = profiles.Keys.First();
+                cbPerfis.SelectedItem = first;
+                cbClienteAtivo.SelectedItem = first;
+                cbClienteAssociado.SelectedItem = first;
+            }
+
             cbPerfis.SelectionChanged += cbPerfis_SelectionChanged;
             cbClienteAtivo.SelectionChanged += cbClienteAtivo_SelectionChanged;
 
             UpdateDefaultIconOnSelectedClient();
-            ApplyDefaultOrLast();
             RefreshDefaultSelectors();
         }
 
@@ -646,12 +683,13 @@ namespace RM_Core
 
             try
             {
+                _isCreatingNewClient = false;
+                _editingClientOriginalName = profile.Name;
                 txtNomePerfil.Text = profile.Name;
                 cbVersaoRM.SelectedItem = profile.RmVersion;
 
                 tsAutoLogin.IsOn = profile.AutoLogin;
 
-                tsDeletarBroker.IsOn = profile.DelBroker;
                 tsVerboseLogs.IsOn = profile.VerboseLogs;
                 tsApagarHost.IsOn = profile.ApagarHost;
                 tsNormalizePath.IsOn = profile.NormalizePath;
@@ -663,7 +701,6 @@ namespace RM_Core
                 cbClienteAtivo.SelectedItem = profile.Name;
                 tsLimparBrokers.IsOn = profile.ApagarHost;
                 tsLogsDetalhados.IsOn = profile.VerboseLogs;
-                tsDeletarBrokerDat.IsOn = profile.DelBroker;
 
                 // Dynamically update and filter bases for this client!
                 UpdateAliasesUI(profile.Name);
@@ -672,9 +709,18 @@ namespace RM_Core
                 UpdateFavoritoIcon(!string.IsNullOrEmpty(_appSettings.DefaultClient) && _appSettings.DefaultClient == profile.Name);
 
                 // Set selected base
-                cbAliasDB.SelectedItem = profile.Alias;
-                var matchBase = aliases.FirstOrDefault(a => a.name == profile.Alias && a.client.Equals(profile.Name, StringComparison.OrdinalIgnoreCase));
-                cbBase.SelectedItem = matchBase;
+                var matchBase = aliases.FirstOrDefault(a => a.name.Equals(profile.Alias, StringComparison.OrdinalIgnoreCase) && a.client.Equals(profile.Name, StringComparison.OrdinalIgnoreCase));
+                if (matchBase != null)
+                {
+                    cbBase.SelectedItem = matchBase;
+                    cbAliasDB.SelectedItem = matchBase.name;
+                }
+                else if (cbBase.Items.Count > 0)
+                {
+                    cbBase.SelectedIndex = 0;
+                    if (cbBase.SelectedItem is AliasConfig first)
+                        cbAliasDB.SelectedItem = first.name;
+                }
             }
             finally
             {
@@ -688,6 +734,8 @@ namespace RM_Core
             string selectedName = cbClienteAtivo.SelectedItem?.ToString() ?? string.Empty;
             if (profiles.TryGetValue(selectedName, out var profile))
             {
+                _isCreatingNewClient = false;
+                _editingClientOriginalName = profile.Name;
                 cbPerfis.SelectedItem = selectedName;
                 LoadProfileToUI(profile);
                 UpdateFilteredAliasesList();
@@ -702,6 +750,8 @@ namespace RM_Core
             string selectedName = cbPerfis.SelectedItem?.ToString() ?? string.Empty;
             if (profiles.TryGetValue(selectedName, out var profile))
             {
+                _isCreatingNewClient = false;
+                _editingClientOriginalName = profile.Name;
                 cbClienteAtivo.SelectedItem = selectedName;
                 LoadProfileToUI(profile);
                 UpdateFilteredAliasesList();
@@ -723,24 +773,17 @@ namespace RM_Core
             _isSyncing = true;
             try
             {
-                string selectedBase = (cbBase.SelectedItem is AliasConfig aliasCfg) ? aliasCfg.name : (cbBase.SelectedItem?.ToString() ?? string.Empty);
-                cbAliasDB.SelectedItem = selectedBase;
-
-                if (cbBase.SelectedItem is AliasConfig alias && alias.id != _appSettings.LastBaseId)
+                if (cbBase.SelectedItem is AliasConfig ac)
                 {
-                    _appSettings.LastBaseId = alias.id;
-                    SaveAppSettings();
-                }
-
-                // Update active client model settings
-                if (cbClienteAtivo.SelectedItem != null)
-                {
-                    string activeClient = cbClienteAtivo.SelectedItem?.ToString() ?? string.Empty;
-                    if (profiles.TryGetValue(activeClient, out var profile))
+                    cbAliasDB.SelectedItem = ac.name;
+                    if (cbPerfis.SelectedItem != null && profiles.TryGetValue(cbPerfis.SelectedItem.ToString()!, out var p))
                     {
-                        profile.Alias = selectedBase;
+                        p.Alias = ac.name;
                         SaveProfiles();
                     }
+                    _appSettings.LastBaseId = ac.id;
+                    SaveAppSettings();
+                    AddLog("info", $"Base \"{ac.name}\" selecionada.");
                 }
             }
             finally
@@ -755,23 +798,83 @@ namespace RM_Core
             _isSyncing = true;
             try
             {
-                string selectedBase = cbAliasDB.SelectedItem?.ToString() ?? string.Empty;
-                cbBase.SelectedItem = selectedBase;
-                
-                // Update active client model settings
-                if (cbPerfis.SelectedItem != null)
+                string baseName = cbAliasDB.SelectedItem.ToString()!;
+                string currentClient = cbPerfis.SelectedItem?.ToString() ?? cbClienteAtivo.SelectedItem?.ToString() ?? "";
+                var match = aliases.FirstOrDefault(a => a.name == baseName && a.client.Equals(currentClient, StringComparison.OrdinalIgnoreCase));
+                if (match != null)
                 {
-                    string activeClient = cbPerfis.SelectedItem?.ToString() ?? string.Empty;
-                    if (profiles.TryGetValue(activeClient, out var profile))
-                    {
-                        profile.Alias = selectedBase;
-                        SaveProfiles();
-                    }
+                    cbBase.SelectedItem = match;
+                    _appSettings.LastBaseId = match.id;
+                    SaveAppSettings();
                 }
+                if (!string.IsNullOrEmpty(currentClient) && profiles.TryGetValue(currentClient, out var p))
+                {
+                    p.Alias = baseName;
+                    SaveProfiles();
+                }
+                AddLog("info", $"Base \"{baseName}\" sincronizada.");
             }
             finally
             {
                 _isSyncing = false;
+            }
+        }
+
+        private void ts_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_isSyncing) return;
+            string activeClient = cbPerfis?.SelectedItem?.ToString()
+                                  ?? cbClienteAtivo?.SelectedItem?.ToString()
+                                  ?? txtNomePerfil?.Text?.Trim()
+                                  ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(activeClient) && profiles.TryGetValue(activeClient, out var prof))
+            {
+                if (tsAutoLogin != null) prof.AutoLogin = tsAutoLogin.IsOn;
+                if (tsVerboseLogs != null) prof.VerboseLogs = tsVerboseLogs.IsOn;
+                if (tsApagarHost != null) prof.ApagarHost = tsApagarHost.IsOn;
+                if (tsNormalizePath != null) prof.NormalizePath = tsNormalizePath.IsOn;
+                if (tsEnableProcessIsolation != null) prof.EnableProcessIsolation = tsEnableProcessIsolation.IsOn;
+                if (tsJobServer3Camadas != null) prof.JobServer3Camadas = tsJobServer3Camadas.IsOn;
+                if (tsEnableCompression != null) prof.EnableCompression = tsEnableCompression.IsOn;
+
+                // Sincroniza toggles na aba Início
+                if (tsLimparBrokers != null) tsLimparBrokers.IsOn = prof.ApagarHost;
+                if (tsLogsDetalhados != null) tsLogsDetalhados.IsOn = prof.VerboseLogs;
+
+                SaveProfiles();
+            }
+        }
+
+        private void ClientToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_isSyncing) return;
+            string activeClient = cbPerfis?.SelectedItem?.ToString() ?? cbClienteAtivo?.SelectedItem?.ToString() ?? string.Empty;
+            if (string.IsNullOrEmpty(activeClient)) return;
+
+            if (profiles.TryGetValue(activeClient, out var prof))
+            {
+                if (tsAutoLogin != null) prof.AutoLogin = tsAutoLogin.IsOn;
+                if (tsVerboseLogs != null) prof.VerboseLogs = tsVerboseLogs.IsOn;
+                if (tsApagarHost != null) prof.ApagarHost = tsApagarHost.IsOn;
+                if (tsNormalizePath != null) prof.NormalizePath = tsNormalizePath.IsOn;
+                if (tsEnableProcessIsolation != null) prof.EnableProcessIsolation = tsEnableProcessIsolation.IsOn;
+                if (tsJobServer3Camadas != null) prof.JobServer3Camadas = tsJobServer3Camadas.IsOn;
+                if (tsEnableCompression != null) prof.EnableCompression = tsEnableCompression.IsOn;
+
+                // Sincroniza toggles na aba Início
+                if (tsLimparBrokers != null) tsLimparBrokers.IsOn = prof.ApagarHost;
+                if (tsLogsDetalhados != null) tsLogsDetalhados.IsOn = prof.VerboseLogs;
+
+                SaveProfiles();
+            }
+        }
+
+        private void txtNomePerfil_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                btnSalvarPerfil_Click(sender, e);
             }
         }
 
@@ -784,13 +887,73 @@ namespace RM_Core
                 return;
             }
 
+            string? oldName = null;
+            if (!_isCreatingNewClient)
+            {
+                oldName = _editingClientOriginalName;
+                if (string.IsNullOrEmpty(oldName) && cbPerfis.SelectedItem != null)
+                {
+                    string selected = cbPerfis.SelectedItem.ToString()!;
+                    if (profiles.ContainsKey(selected))
+                    {
+                        oldName = selected;
+                    }
+                }
+            }
+
+            bool isRenaming = !string.IsNullOrEmpty(oldName) && !oldName.Equals(name, StringComparison.OrdinalIgnoreCase);
+
+            if (isRenaming)
+            {
+                if (profiles.ContainsKey(name))
+                {
+                    MessageBox.Show($"Já existe um cliente cadastrado com o nome \"{name}\".", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (profiles.TryGetValue(oldName!, out var oldProfile))
+                {
+                    profiles.Remove(oldName!);
+                }
+
+                foreach (var al in aliases)
+                {
+                    if (al.client.Equals(oldName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        al.client = name;
+                    }
+                }
+
+                if (_appSettings.DefaultClient == oldName) _appSettings.DefaultClient = name;
+                if (_appSettings.LastClient == oldName) _appSettings.LastClient = name;
+                for (int i = 0; i < _appSettings.FavoriteClientNames.Count; i++)
+                {
+                    if (_appSettings.FavoriteClientNames[i] == oldName) _appSettings.FavoriteClientNames[i] = name;
+                }
+
+                _telemetry?.Track("profile_renamed", new Dictionary<string, object>
+                {
+                    ["old_name"] = oldName!,
+                    ["new_name"] = name
+                });
+            }
+            else
+            {
+                _telemetry?.Track("profile_saved", new Dictionary<string, object>
+                {
+                    ["name"] = name,
+                    ["is_new"] = !profiles.ContainsKey(name)
+                });
+            }
+
             var profile = new ProfileSettings
             {
                 Name = name,
-                RmVersion = cbVersaoRM.SelectedItem?.ToString() ?? "12.1.2402",
-                Alias = cbAliasDB.SelectedItem?.ToString() ?? "CorporeRM",
+                RmVersion = cbVersaoRM.SelectedItem?.ToString() ?? "12.1.2602",
+                Alias = (cbAliasDB.SelectedItem != null && !string.IsNullOrWhiteSpace(cbAliasDB.SelectedItem.ToString()))
+                    ? cbAliasDB.SelectedItem.ToString()!
+                    : (cbBase.SelectedItem is AliasConfig ac ? ac.name : (cbBase.SelectedItem?.ToString() ?? "CorporeRM")),
                 AutoLogin = tsAutoLogin.IsOn,
-                DelBroker = tsDeletarBroker.IsOn,
                 VerboseLogs = tsVerboseLogs.IsOn,
                 ApagarHost = tsApagarHost.IsOn,
                 NormalizePath = tsNormalizePath.IsOn,
@@ -800,35 +963,26 @@ namespace RM_Core
             };
 
             profiles[name] = profile;
-            SaveProfiles();
-            
-            cbPerfis.SelectionChanged -= cbPerfis_SelectionChanged;
-            cbClienteAtivo.SelectionChanged -= cbClienteAtivo_SelectionChanged;
-            
-            cbPerfis.Items.Clear();
-            cbClienteAtivo.Items.Clear();
-            foreach (var key in profiles.Keys)
-            {
-                cbPerfis.Items.Add(key);
-                cbClienteAtivo.Items.Add(key);
-            }
-            
-            cbPerfis.SelectedItem = name;
-            cbClienteAtivo.SelectedItem = name;
-            
-            cbPerfis.SelectionChanged += cbPerfis_SelectionChanged;
-            cbClienteAtivo.SelectionChanged += cbClienteAtivo_SelectionChanged;
+            _appSettings.LastClient = name;
+            SaveAppSettings();
+            SaveProfiles(oldName: isRenaming ? oldName : null, newName: isRenaming ? name : null);
+            SaveAliases();
 
+            _isCreatingNewClient = false;
+            _editingClientOriginalName = name;
+
+            UpdateProfilesUI(name);
+            LoadProfileToUI(profile);
             UpdateFilteredAliasesList();
 
-
-            AddLog("info", $"Cliente \"{name}\" salvo com sucesso.");
-            MessageBox.Show($"Cliente \"{name}\" salvo com sucesso!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
+            AddLog("info", isRenaming ? $"Cliente \"{oldName}\" renomeado para \"{name}\" com sucesso." : $"Cliente \"{name}\" salvo com sucesso.");
             txtNomePerfil.Focus();
         }
 
         private void btnNovoPerfil_Click(object sender, RoutedEventArgs e)
         {
+            _isCreatingNewClient = true;
+            _editingClientOriginalName = null;
             _isSyncing = true;
             try
             {
@@ -863,7 +1017,6 @@ namespace RM_Core
                     cbBase.SelectionChanged += cbBase_SelectionChanged;
                 }
                 tsAutoLogin.IsOn = true;
-                tsDeletarBroker.IsOn = false;
                 tsVerboseLogs.IsOn = true;
                 tsApagarHost.IsOn = false;
                 tsNormalizePath.IsOn = false;
@@ -873,7 +1026,6 @@ namespace RM_Core
 
                 tsLimparBrokers.IsOn = false;
                 tsLogsDetalhados.IsOn = true;
-                tsDeletarBrokerDat.IsOn = false;
 
                 UpdateFavoritoIcon(false);
 
@@ -890,26 +1042,39 @@ namespace RM_Core
             if (cbPerfis.SelectedItem == null) return;
             string selectedName = cbPerfis.SelectedItem?.ToString() ?? string.Empty;
             
-            var result = MessageBox.Show($"Deseja realmente excluir o cliente \"{selectedName}\"?", "Confirmar Exclusão", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            MessageBoxResult result;
+            if (Environment.GetEnvironmentVariable("RMCORE_HEADLESS") == "1")
+            {
+                result = MessageBoxResult.Yes;
+            }
+            else
+            {
+                result = MessageBox.Show($"Deseja realmente excluir o cliente \"{selectedName}\"?", "Confirmar Exclusão", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            }
             if (result == MessageBoxResult.No) return;
 
             profiles.Remove(selectedName);
             SaveProfiles();
-            
+
+            // Clean up in-memory aliases so SaveAliases doesn't recreate this client
+            var toRemove = aliases.Where(a => a.client.Equals(selectedName, StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (var al in toRemove)
+            {
+                aliases.Remove(al);
+            }
+            SaveAliases();
+
+            if (_appSettings.DefaultClient == selectedName) _appSettings.DefaultClient = string.Empty;
+            if (_appSettings.LastClient == selectedName) _appSettings.LastClient = string.Empty;
+            _appSettings.FavoriteClientNames.Remove(selectedName);
+            SaveAppSettings();
+
+            _editingClientOriginalName = null;
+
             AddLog("info", $"Cliente \"{selectedName}\" removido.");
 
             UpdateProfilesUI();
             UpdateFilteredAliasesList();
-
-            
-            cbClienteAtivo.SelectionChanged -= cbClienteAtivo_SelectionChanged;
-            cbClienteAtivo.Items.Clear();
-            foreach (var key in profiles.Keys)
-            {
-                cbClienteAtivo.Items.Add(key);
-            }
-            if (cbClienteAtivo.Items.Count > 0) cbClienteAtivo.SelectedIndex = 0;
-            cbClienteAtivo.SelectionChanged += cbClienteAtivo_SelectionChanged;
             
             if (cbPerfis.SelectedItem != null)
             {
@@ -919,8 +1084,16 @@ namespace RM_Core
                     LoadProfileToUI(profile);
                 }
             }
+            else if (profiles.Count > 0)
+            {
+                LoadProfileToUI(profiles.Values.First());
+            }
+            else
+            {
+                btnNovoPerfil_Click(sender, e);
+            }
             
-            MessageBox.Show($"Cliente \"{selectedName}\" excluído.", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
+            AddLog("info", $"Cliente \"{selectedName}\" excluído com sucesso.");
         }
 
         private void Logs_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -936,25 +1109,37 @@ namespace RM_Core
         private void AddLog(string type, string message)
         {
             // Logs Detalhados OFF → só mostra erros/avisos (ignora info/stdout)
-            if (tsVerboseLogs != null && !tsVerboseLogs.IsOn && type != "error" && type != "warn" && type != "stderr")
+            bool isVerbose = (tsLogsDetalhados?.IsOn == true) || (tsVerboseLogs?.IsOn == true);
+            if (!isVerbose && type != "error" && type != "warn" && type != "stderr")
                 return;
 
-            logs.Add(new LogEntry
+            void Append()
             {
-                Time = DateTime.Now,
-                Type = type,
-                Message = message
-            });
-            if (logs.Count > 1000)
+                logs.Add(new LogEntry
+                {
+                    Time = DateTime.Now,
+                    Type = type,
+                    Message = message
+                });
+                if (logs.Count > 1000)
+                {
+                    logs.RemoveAt(0);
+                }
+            }
+
+            if (Dispatcher.CheckAccess())
             {
-                logs.RemoveAt(0);
+                Append();
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(Append));
             }
 
             // Persist to file — silently ignore any I/O errors
             try
             {
-                string logDir  = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RM_Core");
-                Directory.CreateDirectory(logDir);
+                string logDir  = GetAppDataDir();
                 string logPath = Path.Combine(logDir, "logs.txt");
                 File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{type}] {message}{Environment.NewLine}");
             }
@@ -983,7 +1168,13 @@ namespace RM_Core
         private void btnLimparLogs_Click(object sender, RoutedEventArgs e)
         {
             logs.Clear();
-            AddLog("info", "Logs limpos.");
+            try
+            {
+                string logPath = Path.Combine(GetAppDataDir(), "logs.txt");
+                if (File.Exists(logPath)) File.WriteAllText(logPath, string.Empty);
+            }
+            catch { }
+            AddLog("info", "Logs limpos na interface e no disco.");
         }
 
         private void txtFiltrarLogs_TextChanged(object sender, TextChangedEventArgs e)
@@ -1022,13 +1213,29 @@ namespace RM_Core
         public async Task IniciarRMPlusHostAsync()
         {
             if (_isOperationRunning) return;
+
+            var activeAlias = GetActiveAlias();
+            if (activeAlias == null)
+            {
+                AddLog("error", "Nenhuma Base/Alias ativa selecionada. Selecione uma base antes de iniciar.");
+                MessageBox.Show("Nenhuma Base/Alias selecionada. Por favor, selecione uma base na tela inicial antes de iniciar o ambiente.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string binDir = GetBinDirectory();
+            if (string.IsNullOrEmpty(binDir) || !Directory.Exists(binDir))
+            {
+                AddLog("error", "Pasta de instalação do RM (BIN) não configurada ou não encontrada.");
+                MessageBox.Show("A pasta de instalação do RM não foi encontrada. Acesse a aba Sobre e reconfigure o diretório da instalação.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             SetLoadingState(true);
             try
             {
                 AddLog("info", "Iniciando RM + Host Principal...");
 
                 StartHostPrincipal();
-                string binDir = GetBinDirectory();
                 int hostPort = GetHostPortFromConfig(binDir);
                 AddLog("info", "Host Principal iniciado.");
                 await WaitForHostPortAsync(hostPort, 15000);
@@ -1205,37 +1412,6 @@ namespace RM_Core
             OpenFolder(customPath);
         }
 
-        private void ts_Toggled(object sender, RoutedEventArgs e)
-        {
-            if (_isSyncing) return;
-            if (cbClienteAtivo == null || cbPerfis == null || tsLimparBrokers == null || tsLogsDetalhados == null || tsApagarHost == null || tsVerboseLogs == null || tsDeletarBrokerDat == null) return;
-
-            string activeClient = cbClienteAtivo.SelectedItem?.ToString() ?? cbPerfis.SelectedItem?.ToString() ?? string.Empty;
-            if (string.IsNullOrEmpty(activeClient)) return;
-
-            if (profiles.TryGetValue(activeClient, out var profile))
-            {
-                profile.ApagarHost = tsLimparBrokers.IsOn;
-                profile.VerboseLogs = tsLogsDetalhados.IsOn;
-                profile.DelBroker  = tsDeletarBrokerDat.IsOn;
-
-                _isSyncing = true;
-                try
-                {
-                    tsApagarHost.IsOn     = profile.ApagarHost;
-                    tsVerboseLogs.IsOn    = profile.VerboseLogs;
-                    tsDeletarBroker.IsOn  = profile.DelBroker;
-                }
-                finally
-                {
-                    _isSyncing = false;
-                }
-
-                SaveProfiles();
-                AddLog("info", $"Configurações rápidas salvas para o perfil \"{activeClient}\".");
-            }
-        }
-
         private void btnReconfigurar_Click(object sender, RoutedEventArgs e)
         {
             _telemetry?.Track("feature_used", new Dictionary<string, object> { ["feature"] = "wizard_reconfigurar" });
@@ -1353,7 +1529,7 @@ namespace RM_Core
 
         private void btnEditarBaseHome_Click(object sender, RoutedEventArgs e)
         {
-            string baseSelecionada = cbBase.SelectedItem?.ToString() ?? string.Empty;
+            string baseSelecionada = (cbBase.SelectedItem is AliasConfig ac) ? ac.name : (cbBase.SelectedItem?.ToString() ?? string.Empty);
             if (string.IsNullOrEmpty(baseSelecionada))
             {
                 AddLog("warn", "Selecione uma base primeiro.");
@@ -1371,7 +1547,7 @@ namespace RM_Core
             gridAliasManagerForm.Visibility = Visibility.Visible;
 
             // Seleciona a base atual na lista
-            var alias = filteredAliases.FirstOrDefault(a => a.name == baseSelecionada);
+            var alias = filteredAliases.FirstOrDefault(a => a.name.Equals(baseSelecionada, StringComparison.OrdinalIgnoreCase));
             if (alias != null)
                 lstBases.SelectedItem = alias;
         }
@@ -1517,26 +1693,93 @@ namespace RM_Core
                     return;
                 }
 
-                string ssmsPath = null;
-                string[] possiblePaths = {
-                    @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe",
-                    @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 19\Common7\IDE\Ssms.exe",
-                    @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 18\Common7\IDE\Ssms.exe",
-                };
-                foreach (var p in possiblePaths)
+                string? ssmsPath = null;
+                if (!string.IsNullOrWhiteSpace(_appSettings.SsmsPath) && File.Exists(_appSettings.SsmsPath))
                 {
-                    if (File.Exists(p)) { ssmsPath = p; break; }
+                    ssmsPath = _appSettings.SsmsPath;
+                }
+                else
+                {
+                    string[] possiblePaths = {
+                        @"C:\Program Files\Microsoft SQL Server Management Studio 22\Release\Common7\IDE\Ssms.exe",
+                        @"C:\Program Files\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe",
+                        @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe",
+                        @"C:\Program Files\Microsoft SQL Server Management Studio 19\Common7\IDE\Ssms.exe",
+                        @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 19\Common7\IDE\Ssms.exe",
+                        @"C:\Program Files\Microsoft SQL Server Management Studio 18\Common7\IDE\Ssms.exe",
+                        @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 18\Common7\IDE\Ssms.exe",
+                        @"C:\Program Files\Microsoft SQL Server Management Studio 17\Common7\IDE\Ssms.exe",
+                        @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 17\Common7\IDE\Ssms.exe",
+                    };
+                    foreach (var p in possiblePaths)
+                    {
+                        if (File.Exists(p)) { ssmsPath = p; break; }
+                    }
                 }
 
                 if (ssmsPath == null)
                 {
-                    MessageBox.Show("SQL Server Management Studio não encontrado.\nVerifique se está instalado.", "SSMS não encontrado", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("SQL Server Management Studio não encontrado.\nVerifique se está instalado ou reconfigure o caminho executando o wizard (aba Sobre).", "SSMS não encontrado", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
-                string args = $"-S \"{alias.server}\"";
+                string ssmsServer = alias.server;
+                string host = ssmsServer;
+                string instance = string.Empty;
+                int port = 0;
+
+                int portSeparatorIndex = ssmsServer.IndexOfAny(new[] { ',', ':' });
+                if (portSeparatorIndex >= 0)
+                {
+                    string portPart = ssmsServer.Substring(portSeparatorIndex + 1).Trim();
+                    string digits = new string(portPart.TakeWhile(char.IsDigit).ToArray());
+                    int.TryParse(digits, out port);
+                }
+
+                int instanceSeparatorIndex = ssmsServer.IndexOf('\\');
+                if (instanceSeparatorIndex >= 0)
+                {
+                    string instancePart = ssmsServer.Substring(instanceSeparatorIndex + 1).Trim();
+                    int extraSep = instancePart.IndexOfAny(new[] { ',', ':' });
+                    instance = extraSep >= 0 ? instancePart.Substring(0, extraSep).Trim() : instancePart;
+                }
+                else if (portSeparatorIndex >= 0)
+                {
+                    string portPart = ssmsServer.Substring(portSeparatorIndex + 1).Trim();
+                    int backslashIndex = portPart.IndexOf('\\');
+                    if (backslashIndex >= 0)
+                    {
+                        instance = portPart.Substring(backslashIndex + 1).Trim();
+                    }
+                }
+
+                int firstSeparator = ssmsServer.IndexOfAny(new[] { '\\', ',', ':', '/' });
+                if (firstSeparator >= 0)
+                {
+                    host = ssmsServer.Substring(0, firstSeparator).Trim();
+                }
+
+                ssmsServer = host;
+                if (!string.IsNullOrEmpty(instance))
+                {
+                    ssmsServer += "\\" + instance;
+                }
+                if (port > 0)
+                {
+                    ssmsServer += "," + port;
+                }
+
+                string args = $"-S \"{ssmsServer}\" -N Optional";
                 if (!string.IsNullOrWhiteSpace(alias.Base))
                     args += $" -d \"{alias.Base}\"";
+                if (!string.IsNullOrWhiteSpace(alias.dbUser))
+                    args += $" -U \"{alias.dbUser}\"";
+
+                // Copia a senha para a área de transferência (SSMS não aceita -P)
+                if (!string.IsNullOrWhiteSpace(alias.dbPass))
+                {
+                    Clipboard.SetText(alias.dbPass);
+                }
 
                 Process.Start(new ProcessStartInfo
                 {
@@ -1544,7 +1787,14 @@ namespace RM_Core
                     Arguments = args,
                     UseShellExecute = true
                 });
-                AddLog("info", $"SSMS aberto: servidor {alias.server}, base {alias.Base}");
+
+                string senhaMsg = !string.IsNullOrWhiteSpace(alias.dbPass) 
+                    ? "\n\n🔑 Senha copiada para a área de transferência!" +
+                      "\n\nComo a Microsoft bloqueou o envio de senhas de forma automática, " +
+                      "você precisará colar a senha (Ctrl+V) toda vez que abrir o SSMS por aqui."
+                    : "";
+                MessageBox.Show($"SSMS aberto para {ssmsServer}.{senhaMsg}", "SSMS", MessageBoxButton.OK, MessageBoxImage.Information);
+                AddLog("info", $"SSMS aberto: servidor {ssmsServer}, base {alias.Base}, user {alias.dbUser}");
             }
             catch (Exception ex)
             {
@@ -1682,6 +1932,9 @@ namespace RM_Core
             {
                 foreach (DirectoryInfo subDir in directory.GetDirectories())
                 {
+                    if ((subDir.Attributes & FileAttributes.ReparsePoint) != 0)
+                        continue;
+
                     CleanDirectory(subDir, ref bytesFreed, ref filesDeleted, ref filesFailed);
                     try
                     {
@@ -1706,18 +1959,18 @@ namespace RM_Core
 
         private string GetBinDirectory()
         {
-            // 1) Preferência: caminho salvo pelo wizard na 1ª execução
-            if (!string.IsNullOrEmpty(_appSettings.RmInstallPath) && Directory.Exists(_appSettings.RmInstallPath))
-            {
-                return _appSettings.RmInstallPath;
-            }
-
-            // 2) Versão selecionada na aba Clientes
+            // 1) Versão selecionada na aba Clientes (Prioridade máxima)
             string selectedVersion = cbVersaoRM?.SelectedItem?.ToString() ?? string.Empty;
             if (!string.IsNullOrEmpty(selectedVersion))
             {
                 string legacyPath = $@"C:\RM\Legado\{selectedVersion}\Bin";
                 if (Directory.Exists(legacyPath)) return legacyPath;
+            }
+
+            // 2) Caminho salvo pelo wizard na 1ª execução (Fallback)
+            if (!string.IsNullOrEmpty(_appSettings.RmInstallPath) && Directory.Exists(_appSettings.RmInstallPath))
+            {
+                return _appSettings.RmInstallPath;
             }
 
             // 3) Qualquer Bin dentro de C:\RM\Legado (pega o primeiro)
@@ -1744,14 +1997,39 @@ namespace RM_Core
 
         public AliasConfig GetActiveAlias()
         {
+            if (cbBase.SelectedItem is AliasConfig selectedAlias)
+            {
+                return selectedAlias;
+            }
+
             string activeClient = cbClienteAtivo.SelectedItem?.ToString() ?? cbPerfis.SelectedItem?.ToString() ?? string.Empty;
+            
             if (cbBase.SelectedItem != null)
             {
-                string selectedName = cbBase.SelectedItem?.ToString() ?? string.Empty;
-                var found = aliases.FirstOrDefault(a => a.name == selectedName && (string.IsNullOrEmpty(activeClient) || a.client.Equals(activeClient, StringComparison.OrdinalIgnoreCase)));
-                return found!;
+                string selectedName = (cbBase.SelectedItem is AliasConfig ac) ? ac.name : (cbBase.SelectedItem?.ToString() ?? string.Empty);
+                var found = aliases.FirstOrDefault(a => a.name.Equals(selectedName, StringComparison.OrdinalIgnoreCase) && (string.IsNullOrEmpty(activeClient) || a.client.Equals(activeClient, StringComparison.OrdinalIgnoreCase)));
+                if (found != null) return found;
             }
-            return null!;
+
+            if (!string.IsNullOrEmpty(activeClient) && profiles.TryGetValue(activeClient, out var prof) && !string.IsNullOrEmpty(prof.Alias))
+            {
+                var found = aliases.FirstOrDefault(a => a.name.Equals(prof.Alias, StringComparison.OrdinalIgnoreCase) && a.client.Equals(activeClient, StringComparison.OrdinalIgnoreCase));
+                if (found != null) return found;
+            }
+
+            if (!string.IsNullOrEmpty(activeClient))
+            {
+                var found = aliases.FirstOrDefault(a => a.client.Equals(activeClient, StringComparison.OrdinalIgnoreCase));
+                if (found != null) return found;
+            }
+
+            return aliases.FirstOrDefault()!;
+        }
+
+        private static string XmlEscape(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return string.Empty;
+            return System.Security.SecurityElement.Escape(value);
         }
 
         private void CreateAliasDat(string binDir, AliasConfig alias)
@@ -1761,7 +2039,7 @@ namespace RM_Core
                 bool isSql = alias.dbType.Equals("sql", StringComparison.OrdinalIgnoreCase);
                 string dbType = isSql ? "SqlServer" : "Oracle";
                 string dbProvider = isSql ? "SqlClient" : "OracleClient";
-                string dbNameTag = isSql ? $"<DbName>{alias.Base}</DbName>" : "<DbName/>";
+                string dbNameTag = isSql ? $"<DbName>{XmlEscape(alias.Base)}</DbName>" : "<DbName/>";
 
                 // Read new toggle values (must be accessed on the UI thread — already on dispatcher here)
                 string normalizePath        = tsNormalizePath.IsOn.ToString().ToLower();
@@ -1769,16 +2047,65 @@ namespace RM_Core
                 string jobServer3Camadas    = tsJobServer3Camadas.IsOn.ToString().ToLower();
                 string enableCompression    = tsEnableCompression.IsOn.ToString().ToLower();
 
+                string cleanServer = alias.server;
+                if (isSql)
+                {
+                    string host = cleanServer;
+                    string instance = string.Empty;
+                    int port = 0;
+
+                    int portSeparatorIndex = cleanServer.IndexOfAny(new[] { ',', ':' });
+                    if (portSeparatorIndex >= 0)
+                    {
+                        string portPart = cleanServer.Substring(portSeparatorIndex + 1).Trim();
+                        string digits = new string(portPart.TakeWhile(char.IsDigit).ToArray());
+                        int.TryParse(digits, out port);
+                    }
+
+                    int instanceSeparatorIndex = cleanServer.IndexOf('\\');
+                    if (instanceSeparatorIndex >= 0)
+                    {
+                        string instancePart = cleanServer.Substring(instanceSeparatorIndex + 1).Trim();
+                        int extraSep = instancePart.IndexOfAny(new[] { ',', ':' });
+                        instance = extraSep >= 0 ? instancePart.Substring(0, extraSep).Trim() : instancePart;
+                    }
+                    else if (portSeparatorIndex >= 0)
+                    {
+                        string portPart = cleanServer.Substring(portSeparatorIndex + 1).Trim();
+                        int backslashIndex = portPart.IndexOf('\\');
+                        if (backslashIndex >= 0)
+                        {
+                            instance = portPart.Substring(backslashIndex + 1).Trim();
+                        }
+                    }
+
+                    int firstSeparator = cleanServer.IndexOfAny(new[] { '\\', ',', ':', '/' });
+                    if (firstSeparator >= 0)
+                    {
+                        host = cleanServer.Substring(0, firstSeparator).Trim();
+                    }
+
+                    cleanServer = host;
+                    if (!string.IsNullOrEmpty(instance))
+                    {
+                        cleanServer += "\\" + instance;
+                    }
+                    if (port > 0)
+                    {
+                        cleanServer += "," + port;
+                    }
+                }
+
                 string xml = $@"<?xml version=""1.0"" standalone=""yes""?>
 <RMSAliasData xmlns=""http://tempuri.org/RMSAliasData.xsd"">
   <DbConfig>
     <Alias>CorporeRM</Alias>
     <DbType>{dbType}</DbType>
     <DbProvider>{dbProvider}</DbProvider>
-    <DbServer>{alias.server}</DbServer>
+    <DbServer>{XmlEscape(cleanServer)}</DbServer>
     {dbNameTag}
-    <UserName>{alias.dbUser}</UserName>
-    <Password>{alias.dbPass}</Password>
+    <UserName>{XmlEscape(alias.dbUser)}</UserName>
+    <Password>{XmlEscape(alias.dbPass)}</Password>
     <RunService>{alias.runService.ToString().ToLower()}</RunService>
     <JobServerEnabled>{alias.jobProcessing.ToString().ToLower()}</JobServerEnabled>
     <JobServerMaxThreads>{alias.maxThreads}</JobServerMaxThreads>
@@ -1793,10 +2120,11 @@ namespace RM_Core
     <JobServerProcessPoolEnabled>{alias.processPool.ToString().ToLower()}</JobServerProcessPoolEnabled>
     <NormalizePath>{normalizePath}</NormalizePath>
     <EnableProcessIsolation>{enableProcIsolation}</EnableProcessIsolation>
-    <IsolateProcess>false</IsolateProcess>
+    <IsolateProcess>{enableProcIsolation}</IsolateProcess>
     <JobServer3Camadas>{jobServer3Camadas}</JobServer3Camadas>
     <DefaultDB>CorporeRM</DefaultDB>
     <EnableCompression>{enableCompression}</EnableCompression>
+    <ConnectionStringExtraParams>Encrypt=False;TrustServerCertificate=True</ConnectionStringExtraParams>
   </DbConfig>
 </RMSAliasData>";
 
@@ -1828,16 +2156,45 @@ namespace RM_Core
             }
         }
 
+        private void CleanBrokerCustomIfNeeded(string binDir)
+        {
+            try
+            {
+                string activeClientName = cbClienteAtivo.SelectedItem?.ToString() ?? cbPerfis.SelectedItem?.ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(activeClientName) &&
+                    profiles.TryGetValue(activeClientName, out var activeProfile) &&
+                    activeProfile.ApagarHost)
+                {
+                    if (string.IsNullOrEmpty(binDir)) binDir = GetBinDirectory();
+                    if (!string.IsNullOrEmpty(binDir))
+                    {
+                        string brokerCustomPath = Path.Combine(binDir, "_BrokerCustom.dat");
+                        if (File.Exists(brokerCustomPath))
+                        {
+                            File.Delete(brokerCustomPath);
+                            AddLog("info", "[Deletar Broker Custom] _BrokerCustom.dat excluído antes da inicialização do Host.");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AddLog("error", $"[Deletar Broker Custom] Falha ao excluir _BrokerCustom.dat: {ex.Message}");
+            }
+        }
+
         private void StartHostPrincipal()
         {
             PrepareAlias();
 
             string binDir = GetBinDirectory();
+            CleanBrokerCustomIfNeeded(binDir);
+
             string path = Path.Combine(binDir, "RM.Host.exe");
             if (!File.Exists(path))
                 path = Path.Combine(binDir, "RM.Host.ServiceManager.exe");
 
-            StartProcess(path, "Host Principal");
+            StartHostProcess(path, "Host Principal");
         }
 
         private void StopHostPrincipal()
@@ -1851,13 +2208,79 @@ namespace RM_Core
             PrepareAlias();
 
             string binDir = GetBinDirectory();
-            string path = Path.Combine(binDir, "RM.Host.exe"); 
-            StartProcess(path, "Host 2");
+            CleanBrokerCustomIfNeeded(binDir);
+
+            string path = Path.Combine(binDir, "RM.Host1.exe"); 
+            if (!File.Exists(path))
+                path = Path.Combine(binDir, "RM.Host.exe");
+
+            StartHostProcess(path, "Host 2");
         }
 
         private void StopHost2()
         {
+            KillProcessByName("RM.Host1");
             KillProcessByName("RM.Host");
+        }
+
+        private void StartHostProcess(string path, string displayName)
+        {
+            if (!File.Exists(path))
+            {
+                AddLog("error", $"{displayName} não encontrado em: {path}");
+                MessageBox.Show($"{displayName} não encontrado em: {path}", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                string binDir = Path.GetDirectoryName(path)!;
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = path,
+                    WorkingDirectory = binDir,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = false
+                };
+
+                var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
+
+                proc.OutputDataReceived += (s, e) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(e.Data))
+                    {
+                        AddLog("stdout", $"[{displayName}] {e.Data}");
+                    }
+                };
+
+                proc.ErrorDataReceived += (s, e) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(e.Data))
+                    {
+                        AddLog("stderr", $"[{displayName}] {e.Data}");
+                    }
+                };
+
+                proc.Exited += (s, e) =>
+                {
+                    AddLog("info", $"{displayName} finalizado.");
+                    Dispatcher.BeginInvoke(new Action(() => AtualizarStatusServicos()));
+                };
+
+                proc.Start();
+                proc.BeginOutputReadLine();
+                proc.BeginErrorReadLine();
+
+                AddLog("info", $"{displayName} iniciado com captura de stream em tempo real (PID: {proc.Id}).");
+            }
+            catch (Exception ex)
+            {
+                AddLog("error", $"Erro ao iniciar {displayName} com captura: {ex.Message}. Tentando modo direto...");
+                StartProcess(path, displayName);
+            }
         }
 
         private void StartPortalAluno()
@@ -1917,27 +2340,6 @@ namespace RM_Core
                 }
             }
 
-            // Delete _broker.dat if the active profile has DelBroker enabled
-            try
-            {
-                string activeClientName = cbClienteAtivo.SelectedItem?.ToString() ?? string.Empty;
-                if (!string.IsNullOrEmpty(activeClientName) &&
-                    profiles.TryGetValue(activeClientName, out var activeProfile) &&
-                    activeProfile.DelBroker)
-                {
-                    string brokerPath = Path.Combine(binDir, "_broker.dat");
-                    if (File.Exists(brokerPath))
-                    {
-                        File.Delete(brokerPath);
-                        AddLog("info", "[DelBroker] _broker.dat excluído com sucesso.");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                AddLog("error", $"[DelBroker] Falha ao excluir _broker.dat: {ex.Message}");
-            }
-
             if (File.Exists(path))
             {
                 try
@@ -1952,7 +2354,7 @@ namespace RM_Core
                         string user = string.IsNullOrWhiteSpace(activeAlias.rmUser) ? "mestre" : activeAlias.rmUser;
                         string pass = string.IsNullOrWhiteSpace(activeAlias.rmPass) ? "totvs" : activeAlias.rmPass;
 
-                        string args = $"multi=true alias=CorporeRM user={user} password={pass} #objetos_gerenciais";
+                        string args = $"alias=\"CorporeRM\" user=\"{user}\" password=\"{pass}\"";
 
                         Process.Start(new ProcessStartInfo
                         {
@@ -1961,7 +2363,7 @@ namespace RM_Core
                             UseShellExecute = true,
                             WorkingDirectory = binDir
                         });
-                        AddLog("info", $"RM.exe iniciado com AutoLogin (Usuário: {user}).");
+                        AddLog("info", $"RM.exe iniciado com AutoLogin na base \"{activeAlias.name}\" (Base: {activeAlias.Base}, Usuário: {user}).");
                     }
                     else
                     {
@@ -2129,18 +2531,33 @@ namespace RM_Core
         {
             try
             {
-                string appDir = Path.GetDirectoryName(
-                    System.Reflection.Assembly.GetExecutingAssembly().Location) ?? ".";
-                var dir = new DirectoryInfo(appDir);
-                while (dir != null)
+                string[] baseDirs = {
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    Environment.CurrentDirectory,
+                    Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "."
+                };
+
+                foreach (var baseDir in baseDirs)
                 {
-                    string local = Path.Combine(dir.FullName, "RM.HostCheck.exe");
-                    if (File.Exists(local))
-                        return local;
-                    string inTools = Path.Combine(dir.FullName, "tools", "RM.HostCheck.exe");
-                    if (File.Exists(inTools))
-                        return inTools;
-                    dir = dir.Parent;
+                    if (string.IsNullOrEmpty(baseDir)) continue;
+
+                    string local = Path.Combine(baseDir, "RM.HostCheck.exe");
+                    if (File.Exists(local)) return local;
+
+                    string inTools = Path.Combine(baseDir, "tools", "RM.HostCheck.exe");
+                    if (File.Exists(inTools)) return inTools;
+
+                    var dir = new DirectoryInfo(baseDir);
+                    while (dir != null)
+                    {
+                        string p1 = Path.Combine(dir.FullName, "RM.HostCheck.exe");
+                        if (File.Exists(p1)) return p1;
+
+                        string p2 = Path.Combine(dir.FullName, "tools", "RM.HostCheck.exe");
+                        if (File.Exists(p2)) return p2;
+
+                        dir = dir.Parent;
+                    }
                 }
             }
             catch { }
@@ -2183,26 +2600,42 @@ namespace RM_Core
             {
                 AddLog("info", $"Aguardando ícone verde (autenticação) na porta {hcPort}...");
 
-                var proc = Process.Start(new ProcessStartInfo
+                var psi = new ProcessStartInfo
                 {
                     FileName = hostCheckExe,
                     Arguments = $"\"{binDir}\" {hcPort} {timeoutMs}",
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                    RedirectStandardError = true
-                });
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true
+                };
 
+                using var proc = Process.Start(psi);
                 if (proc == null)
                 {
                     AddLog("error", "Falha ao iniciar RM.HostCheck.exe.");
                     return false;
                 }
 
+                var stderrTask = proc.StandardError.ReadToEndAsync();
+                var stdoutTask = proc.StandardOutput.ReadToEndAsync();
                 await proc.WaitForExitAsync();
+
+                string stderr = await stderrTask;
+                string stdout = await stdoutTask;
+
+                if (!string.IsNullOrWhiteSpace(stderr))
+                {
+                    AddLog("warn", $"[HostCheck] {stderr.Trim()}");
+                }
+                if (!string.IsNullOrWhiteSpace(stdout))
+                {
+                    AddLog("info", $"[HostCheck] {stdout.Trim()}");
+                }
 
                 AddLog("info", proc.ExitCode switch
                 {
-                    0 => "Ícone verde confirmado (autenticado).",
+                    0 => "Ícone verde confirmado (Host autenticado com sucesso).",
                     1 => "Host Client rodando mas não autenticou no tempo limite.",
                     _ => $"HostCheck retornou código {proc.ExitCode}. Prosseguindo..."
                 });
@@ -2305,7 +2738,10 @@ namespace RM_Core
             KillProcessByName("RM");
             KillProcessByName("RM.Host.ServiceManager");
             KillProcessByName("RM.Host");
+            KillProcessByName("RM.Host1");
             KillProcessByName("RM.Host.Service");
+            KillProcessByName("RM.ProcessPool.Process");
+            KillProcessByName("RM.Host.JobServer");
         }
 
         // ---------------------------------------------------------------
@@ -2357,7 +2793,20 @@ namespace RM_Core
                 _telemetry?.Dispose();
             }
             catch { }
+
+            try
+            {
+                _trayService?.Dispose();
+            }
+            catch { }
+
             base.OnClosed(e);
+
+            if (IsExiting)
+            {
+                try { Application.Current?.Shutdown(); } catch { }
+                try { Process.GetCurrentProcess().Kill(); } catch { Environment.Exit(0); }
+            }
         }
 
         // ---------------------------------------------------------------
@@ -2368,6 +2817,14 @@ namespace RM_Core
         {
             RestoreWindowSettings();
             ApplyStartWithWindowsSetting(_appSettings.StartWithWindows);
+
+            if (Environment.GetEnvironmentVariable("RMCORE_HEADLESS") == "1")
+            {
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                Left = -32000;
+                Top = -32000;
+                ShowInTaskbar = false;
+            }
 
             // Se for a primeira vez, mostra o wizard de configuração.
             // O user pode fechar/pular; nesse caso FirstRunComplete continua false
@@ -2413,6 +2870,7 @@ namespace RM_Core
             _appSettings.StartWithWindows     = wiz.StartWithWindows;
             _appSettings.StartMinimized       = wiz.StartMinimized;
             _appSettings.RmInstallPath        = wiz.SelectedInstallPath;
+            _appSettings.SsmsPath             = wiz.SsmsPath;
             _appSettings.PrivacyAccepted      = wiz.PrivacyAccepted;
 
             if (wiz.PrivacyAccepted)
@@ -2683,6 +3141,9 @@ namespace RM_Core
             btnLimparLogs.IsEnabled = !loading;
             btnAbrirSSMS.IsEnabled = !loading;
             btnAtualizarServicos.IsEnabled = !loading;
+            if (btnImportarOutrosAppsCliente != null) btnImportarOutrosAppsCliente.IsEnabled = !loading;
+            if (btnImportarOutrosAppsHeader != null) btnImportarOutrosAppsHeader.IsEnabled = !loading;
+            if (btnImportarOutrosApps != null) btnImportarOutrosApps.IsEnabled = !loading;
             
             menuIniciarSeparado.IsEnabled = !loading;
 
@@ -2778,6 +3239,17 @@ namespace RM_Core
 
         private void btnGerenciarAliases_Click(object sender, RoutedEventArgs e)
         {
+            cbClienteAssociado.Items.Clear();
+            foreach (var key in profiles.Keys)
+            {
+                cbClienteAssociado.Items.Add(key);
+            }
+            string active = cbPerfis.SelectedItem?.ToString() ?? cbClienteAtivo.SelectedItem?.ToString() ?? string.Empty;
+            if (!string.IsNullOrEmpty(active) && cbClienteAssociado.Items.Contains(active))
+            {
+                cbClienteAssociado.SelectedItem = active;
+            }
+            txtSearchBase.Text = string.Empty;
             UpdateFilteredAliasesList();
             gridClientSettingsForm.Visibility = Visibility.Collapsed;
             gridAliasManagerForm.Visibility = Visibility.Visible;
@@ -2843,6 +3315,7 @@ namespace RM_Core
             {
                 string tag = border.Tag?.ToString() ?? "";
                 selectedAlias.TagColor = tag;
+                _appSettings.BaseTagColors[selectedAlias.id] = tag;
                 UpdateColorTagSelectorUI(tag);
                 RefreshBaseListColorDots();
                 lstBases.Items.Refresh();
@@ -2978,37 +3451,36 @@ namespace RM_Core
                 if (!profiles.TryGetValue(selected, out profile)) return;
             }
 
-            if (_appSettings.DefaultClient == profile.Name)
+            bool isNowDefault = _appSettings.DefaultClient != profile.Name;
+            _appSettings.DefaultClient = isNowDefault ? profile.Name : string.Empty;
+
+            foreach (var p in profiles.Values)
             {
-                _appSettings.DefaultClient = string.Empty;
-                AddLog("info", $"Cliente \"{profile.Name}\" removido do padrão.");
+                p.IsFavorite = (!string.IsNullOrEmpty(_appSettings.DefaultClient) && p.Name.Equals(_appSettings.DefaultClient, StringComparison.OrdinalIgnoreCase));
             }
-            else
-            {
-                _appSettings.DefaultClient = profile.Name;
-                AddLog("info", $"Cliente \"{profile.Name}\" definido como padrão.");
-            }
-            UpdateFavoritoIcon(!string.IsNullOrEmpty(_appSettings.DefaultClient) && _appSettings.DefaultClient == profile.Name);
+
+            UpdateFavoritoIcon(isNowDefault);
             SaveAppSettings();
+            AddLog("info", isNowDefault ? $"Cliente \"{profile.Name}\" definido como padrão." : $"Cliente \"{profile.Name}\" removido do padrão.");
         }
 
         private void btnToggleBaseFavorito_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.DataContext is AliasConfig alias)
             {
-                if (_appSettings.DefaultBaseId == alias.id)
+                bool isNowDefault = _appSettings.DefaultBaseId != alias.id;
+                _appSettings.DefaultBaseId = isNowDefault ? alias.id : string.Empty;
+
+                foreach (var a in aliases)
                 {
-                    _appSettings.DefaultBaseId = string.Empty;
-                    AddLog("info", $"Base \"{alias.name}\" removida do padrão.");
+                    a.IsFavorite = (!string.IsNullOrEmpty(_appSettings.DefaultBaseId) && a.id == _appSettings.DefaultBaseId);
                 }
-                else
-                {
-                    _appSettings.DefaultBaseId = alias.id;
-                    AddLog("info", $"Base \"{alias.name}\" definida como padrão.");
-                }
+
                 SaveAppSettings();
                 lstBases.Items.Refresh();
                 RefreshCbBaseColors();
+
+                AddLog("info", isNowDefault ? $"Base \"{alias.name}\" definida como padrão." : $"Base \"{alias.name}\" removida do padrão.");
             }
         }
 
@@ -3171,15 +3643,15 @@ namespace RM_Core
             }
 
             // Apply base: default > last > profile.Alias
-            string baseIdToLoad = !string.IsNullOrEmpty(_appSettings.DefaultBaseId) && aliases.Any(a => a.id == _appSettings.DefaultBaseId)
+            string baseIdToLoad = !string.IsNullOrEmpty(_appSettings.DefaultBaseId) && aliases.Any(a => a.id == _appSettings.DefaultBaseId && a.client.Equals(clientToLoad, StringComparison.OrdinalIgnoreCase))
                 ? _appSettings.DefaultBaseId
-                : (!string.IsNullOrEmpty(_appSettings.LastBaseId) && aliases.Any(a => a.id == _appSettings.LastBaseId)
+                : (!string.IsNullOrEmpty(_appSettings.LastBaseId) && aliases.Any(a => a.id == _appSettings.LastBaseId && a.client.Equals(clientToLoad, StringComparison.OrdinalIgnoreCase))
                     ? _appSettings.LastBaseId
                     : string.Empty);
 
             if (!string.IsNullOrEmpty(baseIdToLoad))
             {
-                var alias = aliases.FirstOrDefault(a => a.id == baseIdToLoad);
+                var alias = aliases.FirstOrDefault(a => a.id == baseIdToLoad && a.client.Equals(clientToLoad, StringComparison.OrdinalIgnoreCase));
                 if (alias != null)
                 {
                     cbBase.SelectionChanged -= cbBase_SelectionChanged;
@@ -3203,7 +3675,12 @@ namespace RM_Core
         // ---------------------------------------------------------------
         private void btnExportarCliente_Click(object sender, RoutedEventArgs e)
         {
-            string selectedName = cbPerfis.SelectedItem?.ToString() ?? string.Empty;
+            string selectedName = txtNomePerfil.Text.Trim();
+            if (string.IsNullOrEmpty(selectedName))
+            {
+                selectedName = cbPerfis.SelectedItem?.ToString() ?? cbClienteAtivo.SelectedItem?.ToString() ?? string.Empty;
+            }
+
             if (string.IsNullOrEmpty(selectedName) || !profiles.TryGetValue(selectedName, out var profile))
             {
                 MessageBox.Show("Selecione um cliente para exportar.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -3212,11 +3689,12 @@ namespace RM_Core
 
             try
             {
+                string safeName = string.Join("_", selectedName.Split(Path.GetInvalidFileNameChars()));
                 var dlg = new Microsoft.Win32.SaveFileDialog
                 {
                     Title = $"Exportar Cliente - {selectedName}",
                     Filter = "JSON|*.json",
-                    FileName = $"{selectedName}.json"
+                    FileName = $"rmcore_cliente_{safeName}.json"
                 };
                 if (dlg.ShowDialog(this) != true) return;
 
@@ -3229,8 +3707,8 @@ namespace RM_Core
                 };
                 var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(dlg.FileName, json);
-                AddLog("info", $"Cliente \"{selectedName}\" exportado: {dlg.FileName}");
-                MessageBox.Show($"Cliente \"{selectedName}\" exportado com sucesso!", "Exportar", MessageBoxButton.OK, MessageBoxImage.Information);
+                AddLog("info", $"Cliente \"{selectedName}\" exportado para: {dlg.FileName} ({clientAliases.Count} base(s)).");
+                MessageBox.Show($"Cliente \"{selectedName}\" exportado com sucesso!\n\n• Bases exportadas: {clientAliases.Count}\n• Arquivo: {dlg.FileName}", "Exportar Cliente", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -3266,8 +3744,10 @@ namespace RM_Core
                 txtDbServer.Text = selectedAlias.server;
                 txtDbUser.Text = selectedAlias.dbUser;
                 pbDbPass.Password = selectedAlias.dbPass;
+                txtDbPassVisible.Text = selectedAlias.dbPass;
                 txtRmUser.Text = selectedAlias.rmUser;
                 pbRmPass.Password = selectedAlias.rmPass;
+                txtRmPassVisible.Text = selectedAlias.rmPass;
 
                 chkRunService.IsChecked = selectedAlias.runService;
                 chkJobProcessing.IsChecked = selectedAlias.jobProcessing;
@@ -3310,12 +3790,24 @@ namespace RM_Core
             if (string.IsNullOrEmpty(activeClient))
                 activeClient = "Cliente Padrão";
 
+            string defaultVersion = string.Empty;
+            if (!string.IsNullOrEmpty(activeClient) && profiles.TryGetValue(activeClient, out var p))
+                defaultVersion = p.RmVersion;
+
+            string baseCandidate = "Nova Conexão";
+            int baseNum = 2;
+            while (aliases.Any(a => a.client.Equals(activeClient, StringComparison.OrdinalIgnoreCase) && a.name.Equals(baseCandidate, StringComparison.OrdinalIgnoreCase)))
+            {
+                baseCandidate = $"Nova Conexão {baseNum++}";
+            }
+
             var newAlias = new AliasConfig
             {
                 id = DateTime.Now.Ticks.ToString(),
-                name = "Nova Conexão",
+                name = baseCandidate,
                 Base = "CorporeRM",
                 client = activeClient,
+                dbVersion = defaultVersion,
                 server = "localhost",
                 dbType = "sql",
                 dbUser = "sa",
@@ -3329,10 +3821,10 @@ namespace RM_Core
             UpdateFilteredAliasesList();
             lstBases.SelectedItem = newAlias;
 
-            string clientForUI = cbPerfis.SelectedItem?.ToString() ?? cbClienteAtivo.SelectedItem?.ToString();
+            string clientForUI = cbPerfis.SelectedItem?.ToString() ?? cbClienteAtivo.SelectedItem?.ToString() ?? string.Empty;
             if (!string.IsNullOrEmpty(clientForUI))
             {
-                UpdateAliasesUI(clientForUI);
+                UpdateAliasesUI(clientForUI, preselectedBaseName: newAlias.name);
             }
             else
             {
@@ -3352,15 +3844,28 @@ namespace RM_Core
                     return;
                 }
 
+                string dbPassValue = (pbDbPass.Visibility == Visibility.Visible) ? pbDbPass.Password.Trim() : txtDbPassVisible.Text.Trim();
+                string rmPassValue = (pbRmPass.Visibility == Visibility.Visible) ? pbRmPass.Password.Trim() : txtRmPassVisible.Text.Trim();
+
+                string oldName = selectedAlias.name;
+                string oldClient = selectedAlias.client;
+                string newClient = cbClienteAssociado.SelectedItem?.ToString() ?? selectedAlias.client;
+
                 selectedAlias.name = name;
                 selectedAlias.dbType = rbOracle.IsChecked == true ? "oracle" : "sql";
                 selectedAlias.Base = txtDbBaseName.Text.Trim();
                 selectedAlias.server = txtDbServer.Text.Trim();
                 selectedAlias.dbUser = txtDbUser.Text.Trim();
-                selectedAlias.dbPass = pbDbPass.Password.Trim();
+                selectedAlias.dbPass = dbPassValue;
                 selectedAlias.rmUser = txtRmUser.Text.Trim();
-                selectedAlias.rmPass = pbRmPass.Password.Trim();
-                selectedAlias.client = cbClienteAssociado.SelectedItem?.ToString() ?? selectedAlias.client;
+                selectedAlias.rmPass = rmPassValue;
+                
+                pbDbPass.Password = dbPassValue;
+                txtDbPassVisible.Text = dbPassValue;
+                pbRmPass.Password = rmPassValue;
+                txtRmPassVisible.Text = rmPassValue;
+
+                selectedAlias.client = newClient;
                 selectedAlias.dbVersion = cbDbVersion.SelectedItem?.ToString() ?? selectedAlias.dbVersion;
 
                 selectedAlias.runService = chkRunService.IsChecked == true;
@@ -3370,24 +3875,62 @@ namespace RM_Core
                 selectedAlias.processPool = chkProcessPool.IsChecked == true;
 
                 int maxThreads = 0;
-                int.TryParse(txtMaxThreads.Text.Trim(), out maxThreads);
+                if (int.TryParse(txtMaxThreads.Text.Trim(), out int parsedThreads))
+                {
+                    maxThreads = Math.Max(0, parsedThreads);
+                }
                 selectedAlias.maxThreads = maxThreads;
 
                 SaveAliases();
+
+                // If renamed, update active profile's alias pointer
+                if (!oldName.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (profiles.TryGetValue(oldClient, out var clientProf) && clientProf.Alias == oldName)
+                    {
+                        clientProf.Alias = name;
+                        SaveProfiles();
+                    }
+                }
+
+                // If moved to a different client, migrate profile connections
+                if (!oldClient.Equals(newClient, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (profiles.TryGetValue(oldClient, out var oldProf) && oldProf.Alias == oldName)
+                    {
+                        var nextBase = aliases.FirstOrDefault(a => a.client.Equals(oldClient, StringComparison.OrdinalIgnoreCase) && a.id != selectedAlias.id);
+                        oldProf.Alias = nextBase?.name ?? "CorporeRM";
+                        SaveProfiles();
+                    }
+                    if (profiles.TryGetValue(newClient, out var newProf) && (string.IsNullOrEmpty(newProf.Alias) || newProf.Alias == "CorporeRM"))
+                    {
+                        newProf.Alias = name;
+                        SaveProfiles();
+                    }
+                    UpdateAliasesUI(oldClient);
+                    UpdateAliasesUI(newClient);
+                }
                 
                 // Refresh list display
                 lstBases.Items.Refresh();
 
-                if (cbClienteAtivo.SelectedItem != null)
+                string clientToUpdate = cbClienteAtivo.SelectedItem?.ToString() ?? cbPerfis.SelectedItem?.ToString() ?? newClient;
+                if (!string.IsNullOrEmpty(clientToUpdate))
                 {
-                    string activeClient = cbClienteAtivo.SelectedItem.ToString()!;
-                    UpdateAliasesUI(activeClient);
+                    UpdateAliasesUI(clientToUpdate, preselectedBaseName: name);
                 }
 
                 UpdateFilteredAliasesList();
 
                 AddLog("info", $"Alias \"{name}\" atualizado com sucesso.");
-                MessageBox.Show($"Alias \"{name}\" atualizado com sucesso!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void txtDbAliasName_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                btnSalvarBase_Click(sender, e);
             }
         }
 
@@ -3395,10 +3938,17 @@ namespace RM_Core
         {
             if (lstBases.SelectedItem is AliasConfig selectedAlias)
             {
+                string copyCandidate = $"{selectedAlias.name} (cópia)";
+                int copyNum = 2;
+                while (aliases.Any(a => a.client.Equals(selectedAlias.client, StringComparison.OrdinalIgnoreCase) && a.name.Equals(copyCandidate, StringComparison.OrdinalIgnoreCase)))
+                {
+                    copyCandidate = $"{selectedAlias.name} (cópia {copyNum++})";
+                }
+
                 var newAlias = new AliasConfig
                 {
                     id = DateTime.Now.Ticks.ToString(),
-                    name = selectedAlias.name + " (cópia)",
+                    name = copyCandidate,
                     Base = selectedAlias.Base,
                     client = selectedAlias.client,
                     server = selectedAlias.server,
@@ -3421,13 +3971,13 @@ namespace RM_Core
                 lstBases.SelectedItem = newAlias;
 
                 if (cbClienteAtivo.SelectedItem != null)
-                    UpdateAliasesUI(cbClienteAtivo.SelectedItem.ToString()!);
+                    UpdateAliasesUI(cbClienteAtivo.SelectedItem.ToString()!, preselectedBaseName: newAlias.name);
 
                 AddLog("info", $"Alias duplicado: \"{newAlias.name}\".");
             }
         }
 
-        private void btnTestarConexao_Click(object sender, RoutedEventArgs e)
+        private async void btnTestarConexao_Click(object sender, RoutedEventArgs e)
         {
             string server = txtDbServer.Text.Trim();
             string type = rbOracle.IsChecked == true ? "oracle" : "sql";
@@ -3436,101 +3986,51 @@ namespace RM_Core
                 MessageBox.Show("Por favor, digite o servidor de banco.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            TestDbConnection(server, type);
+            await TestDbConnectionAsync(server, type);
         }
 
-        private void UpdateDbBaseNameVisibility()
-        {
-            if (lblDbBaseName == null || txtDbBaseName == null || rbSql == null) return;
-            
-            if (rbSql.IsChecked == true)
-            {
-                lblDbBaseName.Visibility = Visibility.Visible;
-                txtDbBaseName.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                lblDbBaseName.Visibility = Visibility.Collapsed;
-                txtDbBaseName.Visibility = Visibility.Collapsed;
-            }
-        }
-
-        private void rbDbProvider_Checked(object sender, RoutedEventArgs e)
-        {
-            UpdateDbBaseNameVisibility();
-        }
-
-        private void btnDeletarBase_Click(object sender, RoutedEventArgs e)
-        {
-            if (lstBases.SelectedItem is AliasConfig selectedAlias)
-            {
-                var result = MessageBox.Show($"Deseja realmente excluir a base/alias \"{selectedAlias.name}\"?", "Confirmar Exclusão", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (result == MessageBoxResult.No) return;
-
-                string deletedName = selectedAlias.name;
-
-                // Find by ID to make it 100% robust
-                var aliasToRemove = aliases.FirstOrDefault(a => a.id == selectedAlias.id);
-                if (aliasToRemove != null)
-                {
-                    aliases.Remove(aliasToRemove);
-                    SaveAliases();
-                }
-
-                // Clear selection state
-                lstBases.SelectedItem = null;
-
-                // Refresh main client selectors dropdown lists
-                string activeClient = cbPerfis.SelectedItem?.ToString() ?? cbClienteAtivo.SelectedItem?.ToString() ?? string.Empty;
-                if (!string.IsNullOrEmpty(activeClient))
-                {
-                    UpdateAliasesUI(activeClient);
-                }
-
-                // Refresh active list of aliases
-                UpdateFilteredAliasesList();
-
-                AddLog("info", $"Alias \"{deletedName}\" removido.");
-                MessageBox.Show($"Alias \"{deletedName}\" excluído com sucesso.", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-        }
-
-        private void TestDbConnection(string serverAddress, string dbType)
+        private async Task TestDbConnectionAsync(string serverAddress, string dbType)
         {
             try
             {
                 string host = serverAddress;
-                int port = dbType.Equals("oracle", StringComparison.OrdinalIgnoreCase) ? 1521 : 1433;
+                int defaultPort = dbType.Equals("oracle", StringComparison.OrdinalIgnoreCase) ? 1521 : 1433;
+                int port = 0;
 
-                // Extrai host:port de vários formatos sem perder o instance name
-                if (host.Contains("/") && !host.Contains("\\"))
+                int portSeparatorIndex = serverAddress.IndexOfAny(new[] { ',', ':' });
+                if (portSeparatorIndex >= 0)
                 {
-                    var parts = host.Split('/');
-                    host = parts[0].Trim();
+                    string portPart = serverAddress.Substring(portSeparatorIndex + 1).Trim();
+                    string digits = new string(portPart.TakeWhile(char.IsDigit).ToArray());
+                    int.TryParse(digits, out port);
                 }
 
-                if (host.Contains(","))
+                int firstSeparator = serverAddress.IndexOfAny(new[] { '\\', ',', ':', '/' });
+                if (firstSeparator >= 0)
                 {
-                    var parts = host.Split(',');
-                    host = parts[0].Trim();
-                    int.TryParse(parts[1].Trim(), out port);
+                    host = serverAddress.Substring(0, firstSeparator).Trim();
                 }
-                else if (host.Contains(":"))
+
+                if (host == "." || host == "(local)" || host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
                 {
-                    var parts = host.Split(':');
-                    host = parts[0].Trim();
-                    int.TryParse(parts[1].Trim(), out port);
+                    host = "127.0.0.1";
+                }
+
+                if (port == 0)
+                {
+                    port = defaultPort;
                 }
 
                 AddLog("info", $"Testando conexão de rede com {host}:{port}...");
                 
                 using (var tcpClient = new System.Net.Sockets.TcpClient())
                 {
-                    var result = tcpClient.BeginConnect(host, port, null, null);
-                    var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(3));
-                    if (success)
+                    var connectTask = tcpClient.ConnectAsync(host, port);
+                    var timeoutTask = Task.Delay(3000);
+                    var completedTask = await Task.WhenAny(connectTask, timeoutTask);
+
+                    if (completedTask == connectTask && tcpClient.Connected)
                     {
-                        tcpClient.EndConnect(result);
                         AddLog("info", $"✅ Rede OK: {host} respondendo na porta {port}.");
                         MessageBox.Show($"Sucesso! Rede OK: {host} respondendo na porta {port}.", "Teste de Conexão", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
@@ -3545,6 +4045,71 @@ namespace RM_Core
             {
                 AddLog("error", $"❌ Erro ao testar rede: {ex.Message}");
                 MessageBox.Show($"Erro ao testar rede: {ex.Message}", "Teste de Conexão", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void UpdateDbBaseNameVisibility()
+        {
+            if (lblDbBaseName == null || txtDbBaseName == null) return;
+            bool isOracle = rbOracle?.IsChecked == true;
+            lblDbBaseName.Text = isOracle ? "SERVICE NAME / INSTÂNCIA ORACLE" : "NOME DA BASE DE DADOS";
+        }
+
+        private void rbDbProvider_Checked(object sender, RoutedEventArgs e)
+        {
+            UpdateDbBaseNameVisibility();
+        }
+
+        private void btnDeletarBase_Click(object sender, RoutedEventArgs e)
+        {
+            if (lstBases.SelectedItem is AliasConfig selectedAlias)
+            {
+                MessageBoxResult confirm;
+                if (Environment.GetEnvironmentVariable("RMCORE_HEADLESS") == "1")
+                {
+                    confirm = MessageBoxResult.Yes;
+                }
+                else
+                {
+                    confirm = MessageBox.Show($"Deseja realmente excluir a base \"{selectedAlias.name}\"?", "Confirmar Exclusão", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                }
+                if (confirm != MessageBoxResult.Yes) return;
+
+                string client = selectedAlias.client;
+                string baseId = selectedAlias.id;
+
+                aliases.Remove(selectedAlias);
+                SaveAliases();
+
+                if (_appSettings.DefaultBaseId == baseId) _appSettings.DefaultBaseId = string.Empty;
+                if (_appSettings.LastBaseId == baseId) _appSettings.LastBaseId = string.Empty;
+                _appSettings.BaseFavoriteIds.Remove(baseId);
+                _appSettings.BaseTagColors.Remove(baseId);
+                SaveAppSettings();
+
+                if (profiles.TryGetValue(client, out var prof) && prof.Alias == selectedAlias.name)
+                {
+                    var nextBase = aliases.FirstOrDefault(a => a.client.Equals(client, StringComparison.OrdinalIgnoreCase));
+                    prof.Alias = nextBase?.name ?? "CorporeRM";
+                    SaveProfiles();
+                }
+
+                UpdateFilteredAliasesList();
+                if (filteredAliases.Count > 0)
+                {
+                    lstBases.SelectedItem = filteredAliases.First();
+                }
+                else
+                {
+                    lstBases.SelectedItem = null;
+                }
+
+                if (cbClienteAtivo.SelectedItem != null)
+                {
+                    UpdateAliasesUI(cbClienteAtivo.SelectedItem.ToString()!);
+                }
+
+                AddLog("info", $"Base \"{selectedAlias.name}\" removida com sucesso.");
             }
         }
 
@@ -3575,6 +4140,605 @@ namespace RM_Core
             finally
             {
                 SetLoadingState(false);
+            }
+        }
+
+        private void btnImportarOutrosApps_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isOperationRunning) return;
+
+            var menu = new ContextMenu
+            {
+                Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E1E22")),
+                BorderBrush = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#33FFFFFF")),
+                Foreground = System.Windows.Media.Brushes.White
+            };
+
+            var itemToolkit = new MenuItem
+            {
+                Header = "⚡ TOTVS RM Toolkit (JSON)",
+                Foreground = System.Windows.Media.Brushes.White,
+                FontSize = 12,
+                Padding = new Thickness(10, 6, 10, 6)
+            };
+            itemToolkit.Click += (_, _) =>
+            {
+                SetLoadingState(true);
+                try { ImportarDoToolkit(); } finally { SetLoadingState(false); }
+            };
+
+            var itemAtalhos = new MenuItem
+            {
+                Header = "🚀 Atalhos (viniciusfs15/Atalhos - SQLite)",
+                Foreground = System.Windows.Media.Brushes.White,
+                FontSize = 12,
+                Padding = new Thickness(10, 6, 10, 6)
+            };
+            itemAtalhos.Click += (_, _) =>
+            {
+                SetLoadingState(true);
+                try { ImportarDoAtalhos(); } finally { SetLoadingState(false); }
+            };
+
+            menu.Items.Add(itemToolkit);
+            menu.Items.Add(itemAtalhos);
+
+            if (sender is FrameworkElement elem)
+            {
+                menu.PlacementTarget = elem;
+                menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                menu.IsOpen = true;
+            }
+            else
+            {
+                menu.IsOpen = true;
+            }
+        }
+
+        private void btnImportarToolkit_Click(object sender, RoutedEventArgs e)
+        {
+            btnImportarOutrosApps_Click(sender, e);
+        }
+
+        public void ImportarDoToolkit(string? specificPath = null)
+        {
+            var candidateDirs = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(specificPath))
+            {
+                if (Directory.Exists(specificPath))
+                    candidateDirs.Add(specificPath);
+                else if (File.Exists(specificPath))
+                    candidateDirs.Add(Path.GetDirectoryName(specificPath)!);
+            }
+
+            string? customToolkitEnv = Environment.GetEnvironmentVariable("TOOLKIT_DATA_DIR");
+            if (!string.IsNullOrWhiteSpace(customToolkitEnv) && Directory.Exists(customToolkitEnv))
+            {
+                candidateDirs.Add(customToolkitEnv);
+            }
+
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+            // Prioriza o local oficial do TOTVS RM Toolkit (LocalAppData\com.totvs.rmtoolkit)
+            candidateDirs.Add(Path.Combine(localAppData, "com.totvs.rmtoolkit"));
+            candidateDirs.Add(Path.Combine(appData, "com.totvs.rmtoolkit"));
+            candidateDirs.Add(Path.Combine(localAppData, "rm-toolkit"));
+            candidateDirs.Add(Path.Combine(appData, "rm-toolkit"));
+            candidateDirs.Add(Path.Combine(appData, "Toolkit"));
+            candidateDirs.Add(Path.Combine(localAppData, "Programs", "Toolkit"));
+            candidateDirs.Add(Path.Combine(localAppData, "Programs", "Toolkit", "resources"));
+
+            string? foundDir = null;
+            string? profilesFile = null;
+            string? aliasesFile = null;
+
+            foreach (var dir in candidateDirs)
+            {
+                if (Directory.Exists(dir))
+                {
+                    string pFile = Path.Combine(dir, "profiles.json");
+                    string aFile = Path.Combine(dir, "aliases.json");
+                    if (File.Exists(pFile) || File.Exists(aFile))
+                    {
+                        foundDir = dir;
+                        profilesFile = File.Exists(pFile) ? pFile : null;
+                        aliasesFile = File.Exists(aFile) ? aFile : null;
+                        break;
+                    }
+                }
+            }
+
+            if (foundDir == null || (profilesFile == null && aliasesFile == null))
+            {
+                var dlg = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = "Selecione o arquivo aliases.json ou profiles.json do Toolkit",
+                    Filter = "Arquivos JSON (*.json)|*.json|Todos os Arquivos (*.*)|*.*",
+                    InitialDirectory = Directory.Exists(Path.Combine(appData, "rm-toolkit")) ? Path.Combine(appData, "rm-toolkit") : localAppData
+                };
+
+                if (dlg.ShowDialog() == true)
+                {
+                    string selectedDir = Path.GetDirectoryName(dlg.FileName)!;
+                    string pFile = Path.Combine(selectedDir, "profiles.json");
+                    string aFile = Path.Combine(selectedDir, "aliases.json");
+                    foundDir = selectedDir;
+                    profilesFile = File.Exists(pFile) ? pFile : (dlg.FileName.EndsWith("profiles.json", StringComparison.OrdinalIgnoreCase) ? dlg.FileName : null);
+                    aliasesFile = File.Exists(aFile) ? aFile : (dlg.FileName.EndsWith("aliases.json", StringComparison.OrdinalIgnoreCase) ? dlg.FileName : null);
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            int importedProfilesCount = 0;
+            int importedAliasesCount = 0;
+
+            // 1. Import Profiles
+            if (profilesFile != null && File.Exists(profilesFile))
+            {
+                try
+                {
+                    string pJson = File.ReadAllText(profilesFile);
+                    using var doc = JsonDocument.Parse(pJson);
+                    foreach (var prop in doc.RootElement.EnumerateObject())
+                    {
+                        string profName = prop.Name;
+                        var elem = prop.Value;
+
+                        string rmVer = elem.TryGetProperty("rmVersion", out var v) ? v.GetString() ?? "12.1.2602" : "12.1.2602";
+                        string aliasRef = elem.TryGetProperty("alias", out var a) ? a.GetString() ?? "" : "";
+                        bool autoLogin = elem.TryGetProperty("autoLogin", out var al) && al.GetBoolean();
+                        bool verbose = elem.TryGetProperty("verboseLogs", out var vl) && vl.GetBoolean();
+                        bool apagarHost = elem.TryGetProperty("apagarHost", out var ah) && ah.GetBoolean();
+
+                        var profile = new ProfileSettings
+                        {
+                            Name = profName,
+                            RmVersion = rmVer,
+                            Alias = aliasRef,
+                            AutoLogin = autoLogin,
+                            VerboseLogs = verbose,
+                            ApagarHost = apagarHost
+                        };
+
+                        profiles[profName] = profile;
+                        importedProfilesCount++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AddLog("error", $"Erro ao ler profiles do Toolkit: {ex.Message}");
+                }
+            }
+
+            // 2. Import Aliases
+            if (aliasesFile != null && File.Exists(aliasesFile))
+            {
+                try
+                {
+                    string aJson = File.ReadAllText(aliasesFile);
+                    using var doc = JsonDocument.Parse(aJson);
+                    if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var elem in doc.RootElement.EnumerateArray())
+                        {
+                            string id = elem.TryGetProperty("id", out var idProp) ? idProp.GetString() ?? DateTime.Now.Ticks.ToString() : DateTime.Now.Ticks.ToString();
+                            string name = elem.TryGetProperty("name", out var nProp) ? nProp.GetString() ?? "Base Importada" : "Base Importada";
+                            string baseName = elem.TryGetProperty("base", out var bProp) ? bProp.GetString() ?? "CorporeRM" : (elem.TryGetProperty("Base", out var bProp2) ? bProp2.GetString() ?? "CorporeRM" : "CorporeRM");
+                            if (string.IsNullOrWhiteSpace(baseName)) baseName = "CorporeRM";
+
+                            string server = elem.TryGetProperty("server", out var sProp) ? sProp.GetString() ?? "" : "";
+                            string dbType = elem.TryGetProperty("dbType", out var dtProp) ? dtProp.GetString() ?? "sql" : "sql";
+                            string dbUser = elem.TryGetProperty("dbUser", out var duProp) ? duProp.GetString() ?? "rm" : "rm";
+                            string dbPass = elem.TryGetProperty("dbPass", out var dpProp) ? dpProp.GetString() ?? "" : "";
+                            string rmUser = elem.TryGetProperty("rmUser", out var ruProp) ? ruProp.GetString() ?? "mestre" : "mestre";
+                            string rmPass = elem.TryGetProperty("rmPass", out var rpProp) ? rpProp.GetString() ?? "totvs" : "totvs";
+                            bool runService = !elem.TryGetProperty("runService", out var rsProp) || rsProp.GetBoolean();
+                            bool jobProc = elem.TryGetProperty("jobProcessing", out var jpProp) && jpProp.GetBoolean();
+                            bool localOnly = elem.TryGetProperty("localOnly", out var loProp) && loProp.GetBoolean();
+                            bool processPool = elem.TryGetProperty("processPool", out var ppProp) && ppProp.GetBoolean();
+                            int maxThreads = elem.TryGetProperty("maxThreads", out var mtProp) ? mtProp.GetInt32() : 0;
+                            string dbVersion = elem.TryGetProperty("dbVersion", out var dvProp) ? dvProp.GetString() ?? "12.1.2602" : "12.1.2602";
+
+                            string associatedClient = "Cliente Padrão";
+                            if (elem.TryGetProperty("client", out var cProp) && !string.IsNullOrWhiteSpace(cProp.GetString()))
+                            {
+                                associatedClient = cProp.GetString()!;
+                            }
+                            else
+                            {
+                                var matchingProfile = profiles.Values.FirstOrDefault(p => p.Alias.Equals(name, StringComparison.OrdinalIgnoreCase));
+                                if (matchingProfile != null)
+                                {
+                                    associatedClient = matchingProfile.Name;
+                                }
+                                else if (profiles.Count > 0)
+                                {
+                                    var fuzzyProf = profiles.Values.FirstOrDefault(p => name.IndexOf(p.Name, StringComparison.OrdinalIgnoreCase) >= 0 || p.Name.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0);
+                                    if (fuzzyProf != null)
+                                    {
+                                        associatedClient = fuzzyProf.Name;
+                                    }
+                                    else
+                                    {
+                                        associatedClient = profiles.Keys.First();
+                                    }
+                                }
+                            }
+
+                            if (!profiles.ContainsKey(associatedClient))
+                            {
+                                profiles[associatedClient] = new ProfileSettings
+                                {
+                                    Name = associatedClient,
+                                    RmVersion = dbVersion,
+                                    Alias = name,
+                                    AutoLogin = true,
+                                    VerboseLogs = true,
+                                    ApagarHost = false
+                                };
+                                importedProfilesCount++;
+                            }
+
+                            var existingAlias = aliases.FirstOrDefault(a => a.name.Equals(name, StringComparison.OrdinalIgnoreCase) && a.client.Equals(associatedClient, StringComparison.OrdinalIgnoreCase));
+                            if (existingAlias != null)
+                            {
+                                existingAlias.server = server;
+                                existingAlias.Base = baseName;
+                                existingAlias.dbType = dbType.ToLower() == "oracle" ? "oracle" : "sql";
+                                existingAlias.dbUser = dbUser;
+                                existingAlias.dbPass = dbPass;
+                                existingAlias.rmUser = rmUser;
+                                existingAlias.rmPass = rmPass;
+                                existingAlias.runService = runService;
+                                existingAlias.jobProcessing = jobProc;
+                                existingAlias.localOnly = localOnly;
+                                existingAlias.processPool = processPool;
+                                existingAlias.maxThreads = maxThreads;
+                                existingAlias.dbVersion = dbVersion;
+                            }
+                            else
+                            {
+                                var newAlias = new AliasConfig
+                                {
+                                    id = id,
+                                    name = name,
+                                    client = associatedClient,
+                                    Base = baseName,
+                                    server = server,
+                                    dbType = dbType.ToLower() == "oracle" ? "oracle" : "sql",
+                                    dbUser = dbUser,
+                                    dbPass = dbPass,
+                                    rmUser = rmUser,
+                                    rmPass = rmPass,
+                                    runService = runService,
+                                    jobProcessing = jobProc,
+                                    localOnly = localOnly,
+                                    processPool = processPool,
+                                    maxThreads = maxThreads,
+                                    dbVersion = dbVersion
+                                };
+                                aliases.Add(newAlias);
+                            }
+                            importedAliasesCount++;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AddLog("error", $"Erro ao ler aliases do Toolkit: {ex.Message}");
+                }
+            }
+
+            SaveProfiles();
+            SaveAliases();
+            UpdateProfilesUI();
+            UpdateFilteredAliasesList();
+
+            if (profiles.Count > 0)
+            {
+                var first = profiles.Values.First();
+                LoadProfileToUI(first);
+            }
+
+            AddLog("info", $"✅ Importação do Toolkit concluída: {importedProfilesCount} cliente(s) e {importedAliasesCount} base(s) importadas de {foundDir}.");
+            if (Environment.GetEnvironmentVariable("RMCORE_HEADLESS") != "1")
+            {
+                MessageBox.Show($"Sucesso!\n\nForam importados do Toolkit:\n• {importedProfilesCount} Cliente(s)\n• {importedAliasesCount} Base(s)\n\nOrigem: {foundDir}", "Importar do Toolkit", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        public void ImportarDoAtalhos(string? specificPath = null)
+        {
+            string? foundDb = null;
+
+            if (!string.IsNullOrWhiteSpace(specificPath) && File.Exists(specificPath))
+            {
+                foundDb = specificPath;
+            }
+            else
+            {
+                // Busca automática em locais conhecidos do Atalhos
+                var candidateDirs = new List<string>();
+                string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+                candidateDirs.Add(Path.Combine(userProfile, "Documents", "Atalhos"));
+                candidateDirs.Add(Path.Combine(localAppData, "Atalhos"));
+                candidateDirs.Add(Path.Combine(appData, "Atalhos"));
+                candidateDirs.Add(Path.Combine(userProfile, "Documents"));
+                candidateDirs.Add(Path.Combine(userProfile, "Downloads"));
+                candidateDirs.Add(Path.Combine(userProfile, "Desktop"));
+
+                foreach (var dir in candidateDirs)
+                {
+                    if (Directory.Exists(dir))
+                    {
+                        try
+                        {
+                            var dbFiles = Directory.GetFiles(dir, "*.db", SearchOption.AllDirectories)
+                                .Concat(Directory.GetFiles(dir, "*.sqlite", SearchOption.AllDirectories))
+                                .Concat(Directory.GetFiles(dir, "*.sqlite3", SearchOption.AllDirectories))
+                                .ToList();
+
+                            var preferred = dbFiles.FirstOrDefault(f => Path.GetFileName(f).Equals("Atalhos.db", StringComparison.OrdinalIgnoreCase) ||
+                                                                        Path.GetFileName(f).Equals("atalhos.db", StringComparison.OrdinalIgnoreCase) ||
+                                                                        Path.GetFileName(f).Equals("database.sqlite", StringComparison.OrdinalIgnoreCase) ||
+                                                                        Path.GetFileName(f).Equals("rmcore.db", StringComparison.OrdinalIgnoreCase));
+                            if (preferred != null)
+                            {
+                                foundDb = preferred;
+                                break;
+                            }
+                            else if (dbFiles.Count > 0)
+                            {
+                                foundDb = dbFiles[0];
+                                break;
+                            }
+                        }
+                        catch { /* ignore scan permission errors */ }
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(foundDb) || !File.Exists(foundDb))
+            {
+                var dlg = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = "Selecione o banco de dados SQLite do Atalhos (Atalhos.db / database.sqlite)",
+                    Filter = "Banco SQLite (*.db;*.sqlite;*.sqlite3)|*.db;*.sqlite;*.sqlite3|Todos os Arquivos (*.*)|*.*",
+                    InitialDirectory = Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Documents", "Atalhos"))
+                        ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Documents", "Atalhos")
+                        : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+                };
+
+                if (dlg.ShowDialog() == true)
+                {
+                    foundDb = dlg.FileName;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            int importedProfilesCount = 0;
+            int importedAliasesCount = 0;
+
+            try
+            {
+                using var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={foundDb};Mode=ReadOnly");
+                conn.Open();
+
+                // 1. Mapeamento de Ambientes (Clientes)
+                var ambMap = new Dictionary<string, string>(); // Id (string/Guid) -> Nome
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND (name='Ambientes' OR name='ambientes');";
+                    var tableName = cmd.ExecuteScalar()?.ToString();
+
+                    if (!string.IsNullOrEmpty(tableName))
+                    {
+                        using var ambCmd = conn.CreateCommand();
+                        ambCmd.CommandText = $"SELECT * FROM {tableName};";
+                        using var reader = ambCmd.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            string id = reader["Id"]?.ToString() ?? Guid.NewGuid().ToString();
+                            string nome = reader["Nome"]?.ToString() ?? $"Cliente_{id}";
+                            string rmVer = "";
+                            try { rmVer = reader["Unidade"]?.ToString() ?? ""; } catch { }
+                            if (string.IsNullOrWhiteSpace(rmVer))
+                            {
+                                try { rmVer = reader["RmVersion"]?.ToString() ?? "12.1.2602"; } catch { rmVer = "12.1.2602"; }
+                            }
+                            if (string.IsNullOrWhiteSpace(rmVer)) rmVer = "12.1.2602";
+
+                            bool autoLogin = false;
+                            try { autoLogin = Convert.ToBoolean(reader["AutoLogin"]); } catch { }
+
+                            ambMap[id] = nome;
+
+                            if (!profiles.ContainsKey(nome))
+                            {
+                                profiles[nome] = new ProfileSettings
+                                {
+                                    Name = nome,
+                                    RmVersion = rmVer,
+                                    Alias = "CorporeRM",
+                                    AutoLogin = autoLogin,
+                                    VerboseLogs = true,
+                                    ApagarHost = false
+                                };
+                                importedProfilesCount++;
+                            }
+                        }
+                    }
+                }
+
+                // 2. Aliases (Bases de Dados)
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND (name='Aliases' OR name='aliases');";
+                    var tableName = cmd.ExecuteScalar()?.ToString();
+
+                    if (!string.IsNullOrEmpty(tableName))
+                    {
+                        using var aliasCmd = conn.CreateCommand();
+                        aliasCmd.CommandText = $"SELECT * FROM {tableName};";
+                        using var reader = aliasCmd.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            string id = reader["Id"]?.ToString() ?? DateTime.Now.Ticks.ToString();
+                            string nome = reader["Nome"]?.ToString() ?? "Base";
+                            
+                            string baseName = "CorporeRM";
+                            try { baseName = reader["BaseName"]?.ToString() ?? "CorporeRM"; } catch { }
+                            if (string.IsNullOrWhiteSpace(baseName))
+                            {
+                                try { baseName = reader["DbName"]?.ToString() ?? "CorporeRM"; } catch { }
+                            }
+                            if (string.IsNullOrWhiteSpace(baseName)) baseName = "CorporeRM";
+
+                            string ambId = "";
+                            try { ambId = reader["AmbienteId"]?.ToString() ?? ""; } catch { }
+                            string clientName = ambMap.TryGetValue(ambId, out var cName) ? cName : "Cliente Padrão";
+
+                            string servidor = "";
+                            try { servidor = reader["Servidor"]?.ToString() ?? ""; } catch { }
+                            if (string.IsNullOrWhiteSpace(servidor))
+                            {
+                                try { servidor = reader["DbServer"]?.ToString() ?? ""; } catch { }
+                            }
+
+                            string dbType = "sql";
+                            try { dbType = reader["DbType"]?.ToString() ?? "sql"; } catch { }
+
+                            string dbUser = "rm";
+                            try { dbUser = reader["UsuarioDB"]?.ToString() ?? ""; } catch { }
+                            if (string.IsNullOrWhiteSpace(dbUser))
+                            {
+                                try { dbUser = reader["DbUser"]?.ToString() ?? "rm"; } catch { dbUser = "rm"; }
+                            }
+
+                            string dbPass = "";
+                            try { dbPass = reader["SenhaDB"]?.ToString() ?? ""; } catch { }
+                            if (string.IsNullOrWhiteSpace(dbPass))
+                            {
+                                try { dbPass = reader["DbPass"]?.ToString() ?? ""; } catch { }
+                            }
+
+                            string rmUser = "mestre";
+                            try { rmUser = reader["Usuario"]?.ToString() ?? "mestre"; } catch { }
+
+                            string rmPass = "totvs";
+                            try { rmPass = reader["Senha"]?.ToString() ?? "totvs"; } catch { }
+
+                            bool runService = true;
+                            try { runService = Convert.ToBoolean(reader["RunService"]); } catch { }
+
+                            bool jobEnabled = false;
+                            try { jobEnabled = Convert.ToBoolean(reader["JobServerEnabled"]); } catch { }
+
+                            bool localOnly = false;
+                            try { localOnly = Convert.ToBoolean(reader["JobServerLocalOnly"]); } catch { }
+
+                            bool processPool = false;
+                            try { processPool = Convert.ToBoolean(reader["JobServerProcessPoolEnabled"]); } catch { }
+
+                            int maxThreads = 0;
+                            try { maxThreads = Convert.ToInt32(reader["JobServerMaxThreads"]); } catch { }
+
+                            string sgbd = "12.1.2602";
+                            try { sgbd = reader["Sgbd"]?.ToString() ?? "12.1.2602"; } catch { }
+
+                            if (!profiles.ContainsKey(clientName))
+                            {
+                                profiles[clientName] = new ProfileSettings
+                                {
+                                    Name = clientName,
+                                    RmVersion = sgbd,
+                                    Alias = nome,
+                                    AutoLogin = true,
+                                    VerboseLogs = true,
+                                    ApagarHost = false
+                                };
+                                importedProfilesCount++;
+                            }
+
+                            var existing = aliases.FirstOrDefault(a => a.name.Equals(nome, StringComparison.OrdinalIgnoreCase) && a.client.Equals(clientName, StringComparison.OrdinalIgnoreCase));
+                            if (existing != null)
+                            {
+                                existing.Base = baseName;
+                                existing.server = servidor;
+                                existing.dbType = dbType.ToLower().Contains("oracle") ? "oracle" : "sql";
+                                existing.dbUser = dbUser;
+                                existing.dbPass = dbPass;
+                                existing.rmUser = rmUser;
+                                existing.rmPass = rmPass;
+                                existing.runService = runService;
+                                existing.jobProcessing = jobEnabled;
+                                existing.localOnly = localOnly;
+                                existing.processPool = processPool;
+                                existing.maxThreads = maxThreads;
+                                existing.dbVersion = sgbd;
+                            }
+                            else
+                            {
+                                aliases.Add(new AliasConfig
+                                {
+                                    id = id,
+                                    name = nome,
+                                    client = clientName,
+                                    Base = baseName,
+                                    server = servidor,
+                                    dbType = dbType.ToLower().Contains("oracle") ? "oracle" : "sql",
+                                    dbUser = dbUser,
+                                    dbPass = dbPass,
+                                    rmUser = rmUser,
+                                    rmPass = rmPass,
+                                    runService = runService,
+                                    jobProcessing = jobEnabled,
+                                    localOnly = localOnly,
+                                    processPool = processPool,
+                                    maxThreads = maxThreads,
+                                    dbVersion = sgbd
+                                });
+                            }
+                            importedAliasesCount++;
+                        }
+                    }
+                }
+
+                SaveProfiles();
+                SaveAliases();
+                UpdateProfilesUI();
+                UpdateFilteredAliasesList();
+
+                if (profiles.Count > 0)
+                {
+                    var first = profiles.Values.First();
+                    LoadProfileToUI(first);
+                }
+
+                AddLog("info", $"✅ Importação do Atalhos concluída: {importedProfilesCount} cliente(s) e {importedAliasesCount} base(s) importadas de {foundDb}.");
+                if (Environment.GetEnvironmentVariable("RMCORE_HEADLESS") != "1")
+                {
+                    MessageBox.Show($"Sucesso!\n\nForam importados do Atalhos:\n• {importedProfilesCount} Cliente(s)\n• {importedAliasesCount} Base(s)\n\nOrigem: {foundDb}", "Importar de outros apps - Atalhos", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                AddLog("error", $"Erro ao importar do Atalhos: {ex.Message}");
+                if (Environment.GetEnvironmentVariable("RMCORE_HEADLESS") != "1")
+                {
+                    MessageBox.Show($"Erro ao importar do Atalhos:\n\n{ex.Message}", "Importar Atalhos", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
@@ -3791,6 +4955,7 @@ namespace RM_Core
             public List<AliasConfig> Aliases { get; set; } = new();
         }
 
+
         private void btnExportar_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -3835,17 +5000,31 @@ namespace RM_Core
                 var data = JsonSerializer.Deserialize<ExportData>(json);
                 if (data == null) throw new Exception("Arquivo inválido.");
 
-                var result = MessageBox.Show(
-                    $"Importar {data.Profiles.Count} cliente(s) e {data.Aliases.Count} base(s)?\nOs dados atuais serão substituídos.",
-                    "Confirmar Importação", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (result != MessageBoxResult.Yes) return;
+                var choice = MessageBox.Show(
+                    $"Deseja MESCLAR os {data.Profiles.Count} cliente(s) e {data.Aliases.Count} base(s) importados com os existentes?\n\n• Clique 'Sim' para Adicionar / Mesclar.\n• Clique 'Não' para Substituir Tudo.\n• Clique 'Cancelar' para Abortar.",
+                    "Opção de Importação", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                if (choice == MessageBoxResult.Cancel) return;
 
-                // Substitui dados
-                profiles.Clear();
+                if (choice == MessageBoxResult.No)
+                {
+                    profiles.Clear();
+                    aliases.Clear();
+                }
+
                 foreach (var p in data.Profiles) profiles[p.Name] = p;
-
-                aliases.Clear();
-                foreach (var a in data.Aliases) aliases.Add(a);
+                foreach (var a in data.Aliases)
+                {
+                    var existing = aliases.FirstOrDefault(x => x.id == a.id || (x.name == a.name && x.client == a.client));
+                    if (existing == null)
+                    {
+                        aliases.Add(a);
+                    }
+                    else
+                    {
+                        int idx = aliases.IndexOf(existing);
+                        aliases[idx] = a;
+                    }
+                }
 
                 SaveProfiles();
                 SaveAliases();
@@ -3874,7 +5053,7 @@ namespace RM_Core
 
             try
             {
-                string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RM_Core");
+                string appData = GetAppDataDir();
 
                 string[] filesToDelete =
                 {
@@ -3990,7 +5169,7 @@ namespace RM_Core
         {
             if (txtVersaoPanel == null || txtVersionStatus == null) return;
 
-            txtVersaoPanel.Text = "v1.0.0";
+            txtVersaoPanel.Text = "vAlpha-0.6.7";
 
             if (_updateCheckFailed)
             {
@@ -4044,22 +5223,50 @@ namespace RM_Core
             }
         }
 
-        private void btnBaixarUpdate_Click(object sender, RoutedEventArgs e)
+        private async void btnBaixarUpdate_Click(object sender, RoutedEventArgs e)
         {
             if (_pendingUpdate != null && !string.IsNullOrEmpty(_pendingUpdate.DownloadUrl))
             {
+                btnBaixarUpdate.IsEnabled = false;
+                btnBaixarUpdate.Content = "Baixando (0%)...";
+                AddLog("info", $"[Auto-Update] Baixando atualização {_pendingUpdate.Version}...");
+
                 try
                 {
-                    Process.Start(new ProcessStartInfo
+                    var svc = new UpdateService();
+                    await svc.DownloadAndApplyUpdateAsync(_pendingUpdate.DownloadUrl, percent =>
                     {
-                        FileName = _pendingUpdate.DownloadUrl,
-                        UseShellExecute = true
+                        Dispatcher.Invoke(() =>
+                        {
+                            btnBaixarUpdate.Content = $"Baixando ({percent}%)...";
+                        });
                     });
-                    AddLog("info", $"Abrindo download: {_pendingUpdate.DownloadUrl}");
+
+                    btnBaixarUpdate.Content = "Instalando e reiniciando...";
+                    AddLog("info", "[Auto-Update] Download concluído com sucesso. Reiniciando o app...");
+
+                    await Task.Delay(800);
+
+                    IsExiting = true;
+                    SaveWindowSettings();
+                    SaveAppSettings();
+                    Application.Current.Shutdown();
                 }
                 catch (Exception ex)
                 {
-                    AddLog("error", $"Erro ao abrir download: {ex.Message}");
+                    AddLog("error", $"[Auto-Update] Falha no download automático: {ex.Message}. Abrindo no navegador...");
+                    btnBaixarUpdate.Content = "Atualizar e Reiniciar";
+                    btnBaixarUpdate.IsEnabled = true;
+
+                    try
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = _pendingUpdate.DownloadUrl,
+                            UseShellExecute = true
+                        });
+                    }
+                    catch { }
                 }
             }
         }
@@ -4083,6 +5290,7 @@ namespace RM_Core
         public bool   FirstRunComplete     { get; set; } = false;
         public bool   PrivacyAccepted     { get; set; } = false;
         public string RmInstallPath        { get; set; } = string.Empty; // pasta <versao>\Bin
+        public string SsmsPath             { get; set; } = string.Empty; // executável Ssms.exe
         public List<string> FavoriteClientNames { get; set; } = new();
         public List<string> BaseFavoriteIds { get; set; } = new();
         public Dictionary<string, string> BaseTagColors { get; set; } = new();

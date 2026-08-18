@@ -1,20 +1,35 @@
 # ============================================================
 #  Build do instalador RM Core
-#  - Publica o app em Release
+#  - Publica o app em Release (compilação limpa)
 #  - Compila o .iss com ISCC.exe (Inno Setup)
 # ============================================================
 
 $ErrorActionPreference = "Stop"
-$root = Split-Path -Parent $PSScriptRoot
-$project = Join-Path $root "RM Core\RM Core.csproj"
+
+# Detecta se foi executado de dentro de 'installer' ou da raiz
+$scriptDir = $PSScriptRoot
+if (-not $scriptDir) { $scriptDir = (Get-Location).Path }
+$root = if ((Split-Path -Leaf $scriptDir) -eq "installer") { Split-Path -Parent $scriptDir } else { $scriptDir }
 $installerDir = Join-Path $root "installer"
+$project = Join-Path $root "RM_CORE\RM_CORE.csproj"
 $distDir = Join-Path $installerDir "dist"
-
-Write-Host "=== 1) Publicando app (Release) ===" -ForegroundColor Cyan
 $publishDir = Join-Path $installerDir "publish_temp"
-if (Test-Path $publishDir) { Remove-Item -LiteralPath $publishDir -Recurse -Force }
+$stageDir = Join-Path $installerDir "stage"
+$issFile = Join-Path $installerDir "RMCore.iss"
 
-# Framework-dependent (Costura.Fody embedded) — ~13MB total
+Write-Host "=== 1) Limpando e Publicando App (Release) ===" -ForegroundColor Cyan
+
+# Encerra processos que possam travar arquivos
+Get-Process -Name "RM Core", "RM_CORE", "RM-Core-Setup*" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+if (Test-Path $publishDir) { Remove-Item -LiteralPath $publishDir -Recurse -Force }
+if (Test-Path $stageDir) { Remove-Item -LiteralPath $stageDir -Recurse -Force }
+
+# Limpa o build anterior para garantir recompilação de todo o XAML e C#
+Write-Host "  Limpando cache de build..." -ForegroundColor DarkGray
+& dotnet clean $project -c Release -v quiet
+
+# Publica o app empacotado pelo Costura.Fody
 $publishArgs = @(
     'publish',
     $project,
@@ -25,50 +40,56 @@ $publishArgs = @(
     '-p:DebugType=embedded',
     '-p:DebugSymbols=false'
 )
-Write-Host "  dotnet $($publishArgs -join ' ')"
+Write-Host "  dotnet $($publishArgs -join ' ')" -ForegroundColor DarkGray
 & dotnet @publishArgs
-if ($LASTEXITCODE -ne 0) { throw "Falha no publish" }
+if ($LASTEXITCODE -ne 0) { throw "Falha no publish do .NET" }
 
-# Copia o RM_CORE.ico (o Costura não copia resource files)
-Copy-Item -LiteralPath (Join-Path $root "RM Core\RM_CORE.ico") -Destination $publishDir -Force
+# Copia o RM_CORE.ico
+Copy-Item -LiteralPath (Join-Path $root "RM_CORE\RM_CORE.ico") -Destination $publishDir -Force
 
-# Copia os binários pro staging do .iss
-$stageDir = Join-Path $installerDir "stage"
-if (Test-Path $stageDir) { Remove-Item -LiteralPath $stageDir -Recurse -Force }
+# Prepara pasta de staging para o Inno Setup
 New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
+Copy-Item -Path (Join-Path $publishDir "*") -Destination $stageDir -Recurse -Force
 
-Get-ChildItem -LiteralPath $publishDir -File | Where-Object { $_.Extension -in ".exe", ".dll", ".json", ".ico" } | ForEach-Object {
-    Copy-Item -LiteralPath $_.FullName -Destination $stageDir -Force
-}
+Write-Host "`n=== 2) Compilando instalador com Inno Setup ===" -ForegroundColor Cyan
 
-Write-Host "=== 2) Compilando instalador (.iss) ===" -ForegroundColor Cyan
-
-# Procura ISCC.exe
+# Localiza ISCC.exe
 $iscc = $null
+$cmdIscc = Get-Command iscc.exe -ErrorAction SilentlyContinue
+$cmdPath = if ($cmdIscc) { $cmdIscc.Source } else { $null }
+
 $candidatePaths = @(
+    $cmdPath,
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
     "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
     "${env:LOCALAPPDATA}\Programs\Inno Setup 6\ISCC.exe",
     "${env:LOCALAPPDATA}\Programs\Inno Setup 7\ISCC.exe",
     "C:\Program Files\Inno Setup 6\ISCC.exe",
-    "C:\Program Files\Inno Setup 7\ISCC.exe"
-)
+    "C:\Program Files\Inno Setup 7\ISCC.exe",
+    "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+    "C:\Program Files (x86)\Inno Setup 5\ISCC.exe"
+) | Where-Object { $_ -ne $null -and $_ -ne "" }
+
 foreach ($p in $candidatePaths) {
-    if ($p -and (Test-Path $p)) { $iscc = $p; break }
+    if (Test-Path $p) { $iscc = $p; break }
 }
 
 if (-not $iscc) {
-    Write-Host "  Inno Setup (ISCC.exe) não encontrado." -ForegroundColor Yellow
+    Write-Host "  [ERRO] Inno Setup (ISCC.exe) não encontrado." -ForegroundColor Red
     Write-Host "  Baixe em https://jrsoftware.org/isinfo.php (grátis) e instale." -ForegroundColor Yellow
-    Write-Host "  Após instalar, rode este script de novo." -ForegroundColor Yellow
     exit 1
 }
 
+Write-Host "  Usando compilador: $iscc" -ForegroundColor DarkGray
+
 if (-not (Test-Path $distDir)) { New-Item -ItemType Directory -Path $distDir -Force | Out-Null }
 
-$issFile = Join-Path $installerDir "RMCore.iss"
-& $iscc $issFile
+# Limpa instaladores antigos da pasta dist antes de gerar o novo
+Get-ChildItem -LiteralPath $distDir -Filter "RM-Core-Setup*.exe" -ErrorAction SilentlyContinue | Remove-Item -Force
+
+# Executa ISCC passando o OutputDir explicitamente
+& "$iscc" "/O$distDir" "$issFile"
 if ($LASTEXITCODE -ne 0) { throw "Falha na compilação do .iss" }
 
-Write-Host "`n=== Instalador gerado em: $distDir ===" -ForegroundColor Green
-Get-ChildItem -LiteralPath $distDir -File | Format-Table Name, @{N='Size(MB)'; E={[math]::Round($_.Length / 1MB, 2)}}
+Write-Host "`n=== ✅ Instalador gerado com sucesso em: $distDir ===" -ForegroundColor Green
+Get-ChildItem -LiteralPath $distDir -File | Format-Table Name, @{N='Size(MB)'; E={[math]::Round($_.Length / 1MB, 2)}}, LastWriteTime

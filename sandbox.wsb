@@ -1,0 +1,47 @@
+<Configuration>
+  <!--
+    Sandbox WPF / WSB para execucao isolada da suite de testes E2E do RM Core.
+    - Mapeia a pasta de build (bin\Debug\net9.0-windows) como C:\RMCoreBuild (read-only)
+    - Mapeia a pasta do projeto de teste como C:\RMCoreTests (read-only)
+    - Desabilita rede, clipboard, video isolado (anti-leak) e imprime como
+      vGPU para performance.
+    - Executa o setup_sandbox.bat automaticamente no login do usuario
+      Sandbox\User (que ja e admin local da VM descartavel).
+  -->
+  <VGpu>Enable</VGpu>
+  <Networking>Disable</Networking>
+  <ClipboardRedirection>Disable</ClipboardRedirection>
+  <MemoryInMB>8192</MemoryInMB>
+  <ProtectedClient>Enable</ProtectedClient>
+
+  <MappedFolders>
+    <!--
+      AJUSTE ESTES CAMINHOS PARA A SUA MAQUINA FISICA.
+      No Windows Sandbox eles aparecem no caminho "C:\Users\WDAGUtilityAccount\Desktop\<HostFolder>"
+      (sempre read-only, conforme ReadOnly=true).
+    -->
+    <MappedFolder>
+      <HostFolder>C:\Users\MIGUEL.SENA\Documents\RM_Core\RM_CORE\bin\Debug\net9.0-windows10.0.18362.0</HostFolder>
+      <SandboxFolder>C:\RMCoreBuild</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <MappedFolder>
+      <HostFolder>C:\Users\MIGUEL.SENA\Documents\RM_Core\RM Core.Tests</HostFolder>
+      <SandboxFolder>C:\RMCoreTests</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <!--
+      Pasta scratch read-write para a VM gerar Alias.dat, telemetria, logs etc.
+      Descartada junto com a VM ao final da sessao.
+    -->
+    <MappedFolder>
+      <HostFolder>C:\Users\MIGUEL.SENA\Documents\RM_Core\sandbox-scratch</HostFolder>
+      <SandboxFolder>C:\RMCoreScratch</SandboxFolder>
+      <ReadOnly>false</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+
+  <LogonCommand>
+    <Command>cmd.exe /c C:\RMCoreTests\setup_sandbox.bat</Command>
+  </LogonCommand>
+</Configuration>

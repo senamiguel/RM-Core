@@ -56,8 +56,8 @@ namespace RM_Core
                 var physPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var vdir in vdirsDoc.Descendants().Where(e => e.Name.LocalName.Equals("VDIR", StringComparison.OrdinalIgnoreCase)))
                 {
-                    string appName = GetAttr(vdir, "APP.NAME");
-                    string phys    = GetAttr(vdir, "physicalPath");
+                    string? appName = GetAttr(vdir, "APP.NAME");
+                    string? phys    = GetAttr(vdir, "physicalPath");
                     if (!string.IsNullOrEmpty(appName) && phys != null)
                         physPaths[appName] = phys;
                 }
@@ -65,8 +65,8 @@ namespace RM_Core
                 // Itera apps e junta com physicalPath do vdir correspondente
                 foreach (var appEl in appsDoc.Descendants().Where(e => e.Name.LocalName.Equals("APP", StringComparison.OrdinalIgnoreCase)))
                 {
-                    string appName  = GetAttr(appEl, "APP.NAME");
-                    string siteName = GetAttr(appEl, "SITE.NAME");
+                    string? appName  = GetAttr(appEl, "APP.NAME");
+                    string? siteName = GetAttr(appEl, "SITE.NAME");
                     string appPath  = GetAttr(appEl, "path") ?? "/";
 
                     // Pula o site raiz (path "/") — só mostra apps filhas

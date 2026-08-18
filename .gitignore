@@ -34,6 +34,13 @@ Thumbs.db
 desktop.ini
 
 # =============================================================
+#  Ambiente Local / Windows Sandbox (caminhos da maquina fisica)
+# =============================================================
+*.wsb
+!sandbox.example.wsb
+sandbox-scratch/
+
+# =============================================================
 #  Logs e temporários do app (gerados em runtime)
 # =============================================================
 *.log
@@ -49,8 +56,24 @@ logs.txt
 *.pgp
 secrets/
 .env
+# =============================================================
+#  Bancos de dados e backups locais (NUNCA SUBIR)
+# =============================================================
 *.db
 *.db-shm
 *.db-wal
+*.db.bak
+*.bak
+rmcore_copy.db
+rmcore.db
+
+# =============================================================
+#  Testes e Relatórios
+# =============================================================
+TestResults/
+*.trx
+*.coverage
+ui_test_steps.log
+
 RM Core/bin/
 RM Core/obj/

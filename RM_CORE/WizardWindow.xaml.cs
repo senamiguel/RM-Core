@@ -12,6 +12,7 @@ namespace RM_Core
     {
         // Resultado final do wizard (consumido pela MainWindow)
         public string SelectedInstallPath { get; private set; } = string.Empty;
+        public string SsmsPath { get; private set; } = string.Empty;
         public string ClientName { get; private set; } = string.Empty;
         public string ClientVersion { get; private set; } = "12.1.2602";
         public string BaseName { get; private set; } = "";
@@ -45,6 +46,7 @@ namespace RM_Core
             _pages = new[] { pageWelcome, pageInstall, pageClient, pageBase, pageBehavior, pagePrivacy, pageDone };
 
             DetectInstallPaths();
+            DetectSsmsPath();
             LoadVersionsForClient();
             ShowPage(0);
         }
@@ -221,6 +223,7 @@ namespace RM_Core
             {
                 case 1: // Install
                     SelectedInstallPath = txtSelectedPath.Tag as string ?? string.Empty;
+                    SsmsPath = txtSsmsPath.Text.Trim();
                     break;
 
                 case 2: // Client
@@ -295,6 +298,44 @@ namespace RM_Core
                 string path = lstInstallPaths.SelectedItem.ToString() ?? string.Empty;
                 txtSelectedPath.Text = path;
                 txtSelectedPath.Tag = path;
+            }
+        }
+
+        private void DetectSsmsPath()
+        {
+            string[] possiblePaths = {
+                @"C:\Program Files\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe",
+                @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe",
+                @"C:\Program Files\Microsoft SQL Server Management Studio 19\Common7\IDE\Ssms.exe",
+                @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 19\Common7\IDE\Ssms.exe",
+                @"C:\Program Files\Microsoft SQL Server Management Studio 18\Common7\IDE\Ssms.exe",
+                @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 18\Common7\IDE\Ssms.exe",
+                @"C:\Program Files\Microsoft SQL Server Management Studio 17\Common7\IDE\Ssms.exe",
+                @"C:\Program Files (x86)\Microsoft SQL Server Management Studio 17\Common7\IDE\Ssms.exe",
+            };
+            foreach (var p in possiblePaths)
+            {
+                if (File.Exists(p))
+                {
+                    txtSsmsPath.Text = p;
+                    txtSsmsPath.Tag = p;
+                    break;
+                }
+            }
+        }
+
+        private void btnBrowseSsms_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new OpenFileDialog
+            {
+                Title = "Selecionar executável do SSMS (Ssms.exe)",
+                Filter = "Ssms.exe|Ssms.exe|Executáveis (*.exe)|*.exe",
+                Multiselect = false
+            };
+            if (dlg.ShowDialog(this) == true)
+            {
+                txtSsmsPath.Text = dlg.FileName;
+                txtSsmsPath.Tag = dlg.FileName;
             }
         }
 

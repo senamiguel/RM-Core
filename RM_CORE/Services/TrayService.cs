@@ -174,7 +174,7 @@ namespace RM_Core.Services
         {
             try
             {
-                string[] processNames = { "RM", "RM.Host.ServiceManager", "RM.Host", "RM.Host.Service" };
+                string[] processNames = { "RM", "RM.Host.ServiceManager", "RM.Host", "RM.Host1", "RM.Host.Service", "RM.ProcessPool.Process", "RM.Host.JobServer" };
                 int killed = 0;
                 foreach (string name in processNames)
                 {
@@ -222,10 +222,31 @@ namespace RM_Core.Services
 
         private void OnSair(object? sender, EventArgs e)
         {
-            _mainWindow.IsExiting = true;
-            Dispose();
-            _mainWindow.Close();
-            Application.Current.Shutdown();
+            try
+            {
+                _mainWindow.IsExiting = true;
+                Dispose();
+            }
+            catch { }
+
+            try
+            {
+                _mainWindow.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    try { _mainWindow.Close(); } catch { }
+                    try { Application.Current?.Shutdown(); } catch { }
+                }));
+            }
+            catch { }
+
+            try
+            {
+                Process.GetCurrentProcess().Kill();
+            }
+            catch
+            {
+                Environment.Exit(0);
+            }
         }
 
         private static Icon GetAppIcon()

@@ -451,7 +451,6 @@
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
                   </Grid.ColumnDefinitions>
 
                   <DockPanel Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center" LastChildFill="False">
@@ -467,11 +466,6 @@
                         <TextBlock Text="DBG" FontSize="8" FontWeight="Bold" Foreground="White"/>
                       </Border>
                     </StackPanel>
-                  </DockPanel>
-
-                  <DockPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" LastChildFill="False">
-                    <ui:ToggleSwitch x:Name="tsDeletarBrokerDat" DockPanel.Dock="Right" OffContent="" OnContent="" MinWidth="0" Margin="6,0,0,0" Toggled="ts_Toggled" IsOn="True" VerticalAlignment="Center"/>
-                    <TextBlock Text="Deletar Broker" FontSize="10" FontWeight="Medium" Foreground="#E6FFFFFF" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                   </DockPanel>
                 </Grid>
               </Border>
@@ -621,11 +615,6 @@
           <StackPanel>
             <TextBlock Text="WEB &amp; FERRAMENTAS" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,0,0,10"/>
 
-            <!-- Portal do Aluno -->
-
-            <!-- Host 2 -->
-
-            <!-- Ações Rápidas -->
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -692,8 +681,6 @@
             </Grid>
           </StackPanel>
 
-          <!-- 6. (removido: clientes/bases favoritas — agora configurado em Sobre) -->
-
           <!-- 7. STATUS DOS SERVIÇOS -->
           <StackPanel>
             <Grid Margin="0,0,0,8">
@@ -730,7 +717,6 @@
               </StackPanel>
             </Border>
           </StackPanel>
-
 
         </ikw:SimpleStackPanel>
       </ScrollViewer>
@@ -818,16 +804,22 @@
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
           </Grid.RowDefinitions>
 
           <!-- FIXED HEADER SECTION -->
           <ikw:SimpleStackPanel Grid.Row="0" Spacing="18" Margin="18,15,18,15">
             <!-- Header -->
             <Grid Margin="0,0,0,5">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
               <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#4DA6FF" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <TextBlock Text="CONFIGURAÇÕES DE CLIENTE" FontSize="16" FontWeight="Bold" Foreground="#E6FFFFFF" VerticalAlignment="Center"/>
               </StackPanel>
+              <Button x:Name="btnImportarOutrosAppsCliente" AutomationProperties.AutomationId="btnImportarOutrosAppsCliente" Grid.Column="1" Height="28" Padding="10,0,10,0" Style="{StaticResource PremiumCardButtonStyle}" Content="Importar de outros apps" Click="btnImportarOutrosApps_Click" ToolTip="Importar clientes e bases do Toolkit ou Atalhos"/>
             </Grid>
 
             <!-- 1. PROFILE SELECTOR & ACTIONS -->
@@ -896,11 +888,11 @@
                           <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="NOME DO CLIENTE"/>
-                        <Button x:Name="btnToggleFavorito" Grid.Column="1" Width="22" Height="22" Background="Transparent" BorderThickness="0" Click="btnToggleFavorito_Click" ToolTip="Definir como cliente padr�o" VerticalAlignment="Bottom">
+                        <Button x:Name="btnToggleFavorito" Grid.Column="1" Width="22" Height="22" Background="Transparent" BorderThickness="0" Click="btnToggleFavorito_Click" ToolTip="Definir como cliente padrão" VerticalAlignment="Bottom">
                           <TextBlock x:Name="iconFavorito" Text="&#xE735;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#80FFFFFF"/>
                         </Button>
                       </Grid>
-                      <TextBox x:Name="txtNomePerfil" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" Padding="6,0,6,0" VerticalContentAlignment="Center" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" CaretBrush="White"/>
+                      <TextBox x:Name="txtNomePerfil" HorizontalAlignment="Stretch" Height="34" ui:ControlHelper.CornerRadius="6" Padding="6,0,6,0" VerticalContentAlignment="Center" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" CaretBrush="White" KeyDown="txtNomePerfil_KeyDown"/>
                     </StackPanel>
 
                   <Grid>
@@ -950,22 +942,7 @@
                         <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Auto Login"/>
                         <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Ignorar tela de login" Margin="0,2,0,0"/>
                       </StackPanel>
-                      <ui:ToggleSwitch x:Name="tsAutoLogin" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="True"/>
-                    </Grid>
-
-                    <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
-
-                    <!-- Deletar Broker -->
-                    <Grid Margin="0,0,0,12">
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                      </Grid.ColumnDefinitions>
-                      <StackPanel VerticalAlignment="Center">
-                        <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Deletar Broker"/>
-                        <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Apagar _broker.dat" Margin="0,2,0,0"/>
-                      </StackPanel>
-                      <ui:ToggleSwitch x:Name="tsDeletarBroker" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+                      <ui:ToggleSwitch x:Name="tsAutoLogin" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="True" Toggled="ClientToggle_Toggled"/>
                     </Grid>
 
                     <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
@@ -980,7 +957,7 @@
                         <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Logs Detalhados"/>
                         <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Capturar stack traces" Margin="0,2,0,0"/>
                       </StackPanel>
-                      <ui:ToggleSwitch x:Name="tsVerboseLogs" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="True"/>
+                      <ui:ToggleSwitch x:Name="tsVerboseLogs" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="True" Toggled="ClientToggle_Toggled"/>
                     </Grid>
 
                     <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
@@ -995,7 +972,7 @@
                         <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Deletar Broker Custom"/>
                         <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Apagar _BrokerCustom.dat" Margin="0,2,0,0"/>
                       </StackPanel>
-                      <ui:ToggleSwitch x:Name="tsApagarHost" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+                      <ui:ToggleSwitch x:Name="tsApagarHost" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False" Toggled="ClientToggle_Toggled"/>
                     </Grid>
 
                     <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
@@ -1010,7 +987,7 @@
                         <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="NormalizePath"/>
                         <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Normalizar caminhos no Alias.dat" Margin="0,2,0,0"/>
                       </StackPanel>
-                      <ui:ToggleSwitch x:Name="tsNormalizePath" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+                      <ui:ToggleSwitch x:Name="tsNormalizePath" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False" Toggled="ClientToggle_Toggled"/>
                     </Grid>
 
                     <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
@@ -1025,7 +1002,7 @@
                         <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Enable Process Isolation"/>
                         <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Isolar processos do RM Host" Margin="0,2,0,0"/>
                       </StackPanel>
-                      <ui:ToggleSwitch x:Name="tsEnableProcessIsolation" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+                      <ui:ToggleSwitch x:Name="tsEnableProcessIsolation" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False" Toggled="ClientToggle_Toggled"/>
                     </Grid>
 
                     <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
@@ -1040,7 +1017,7 @@
                         <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Job Server 3 Camadas"/>
                         <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Habilitar modo 3 camadas" Margin="0,2,0,0"/>
                       </StackPanel>
-                      <ui:ToggleSwitch x:Name="tsJobServer3Camadas" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+                      <ui:ToggleSwitch x:Name="tsJobServer3Camadas" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False" Toggled="ClientToggle_Toggled"/>
                     </Grid>
 
                     <Border BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0" Margin="0,0,0,12"/>
@@ -1055,7 +1032,7 @@
                         <TextBlock FontSize="12" FontWeight="Medium" Foreground="#E6FFFFFF" Text="Enable Compression"/>
                         <TextBlock FontSize="10" Foreground="#80FFFFFF" Text="Compressão de dados do Host" Margin="0,2,0,0"/>
                       </StackPanel>
-                      <ui:ToggleSwitch x:Name="tsEnableCompression" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False"/>
+                      <ui:ToggleSwitch x:Name="tsEnableCompression" Grid.Column="1" OffContent="" OnContent="" MinWidth="0" IsOn="False" Toggled="ClientToggle_Toggled"/>
                     </Grid>
                   </StackPanel>
                 </Border>
@@ -1063,8 +1040,32 @@
 
             </ikw:SimpleStackPanel>
           </ScrollViewer>
+
+          <!-- Sticky Bottom Action Bar (Row 2, does not scroll) -->
+          <Border Grid.Row="2" Background="Transparent" BorderThickness="0" Padding="18,10,18,15">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <Button x:Name="btnSalvarPerfilBottom" AutomationProperties.AutomationId="btnSalvarPerfilBottom" Grid.Column="0" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumPrimaryButtonStyle}" Content="Salvar Alterações" Click="btnSalvarPerfil_Click" FontWeight="SemiBold"/>
+              <Button x:Name="btnNovoPerfilBottom" AutomationProperties.AutomationId="btnNovoPerfilBottom" Grid.Column="2" Height="38" Padding="14,0,14,0" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumCardButtonStyle}" Content="+ Novo Cliente" Click="btnNovoPerfil_Click" FontWeight="SemiBold"/>
+              <Button x:Name="btnExportarClienteBottom" AutomationProperties.AutomationId="btnExportarClienteBottom" Grid.Column="4" Width="38" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumCardButtonStyle}" ToolTip="Exportar este cliente" Click="btnExportarCliente_Click">
+                <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Button>
+              <Button x:Name="btnDeletarPerfilBottom" AutomationProperties.AutomationId="btnDeletarPerfilBottom" Grid.Column="6" Width="38" Height="38" ui:ControlHelper.CornerRadius="6" Style="{StaticResource PremiumRedButtonStyle}" ToolTip="Excluir Cliente" Click="btnDeletarPerfil_Click">
+                <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Button>
+            </Grid>
+          </Border>
         </Grid>
-              <!-- Sub-tela 2: Gerenciar Aliases do Banco (Modal/Overlay) -->
+
+        <!-- Sub-tela 2: Gerenciar Aliases do Banco (Modal/Overlay) -->
         <Grid x:Name="gridAliasManagerForm" Visibility="Collapsed" Margin="18,15,18,15">
           <Grid.RowDefinitions>
             <!-- Header -->
@@ -1080,12 +1081,15 @@
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="6" />
+              <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
               <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#4DA6FF" VerticalAlignment="Center" Margin="0,0,8,0"/>
               <TextBlock Text="GERENCIAR BASES" FontSize="16" FontWeight="Bold" Foreground="#E6FFFFFF" VerticalAlignment="Center"/>
             </StackPanel>
-            <Button x:Name="btnVoltarCliente" Grid.Column="1" Height="28" Padding="12,0,12,0" Style="{StaticResource PremiumCardButtonStyle}" Content="Voltar" Click="btnVoltarCliente_Click"/>
+            <Button x:Name="btnImportarOutrosAppsHeader" AutomationProperties.AutomationId="btnImportarOutrosAppsHeader" Grid.Column="1" Height="28" Padding="10,0,10,0" Style="{StaticResource PremiumCardButtonStyle}" Content="Importar de outros apps" Click="btnImportarOutrosApps_Click" ToolTip="Importar clientes e bases do Toolkit ou Atalhos"/>
+            <Button x:Name="btnVoltarCliente" AutomationProperties.AutomationId="btnVoltarCliente" Grid.Column="3" Height="28" Padding="12,0,12,0" Style="{StaticResource PremiumCardButtonStyle}" Content="Voltar" Click="btnVoltarCliente_Click"/>
           </Grid>
 
           <!-- Scrollable Content (Row 1) -->
@@ -1118,14 +1122,14 @@
                         </Grid.ColumnDefinitions>
                         <Ellipse x:Name="colorDot" Width="10" Height="10" Fill="Transparent" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <TextBlock Grid.Column="1" Text="{Binding name}" VerticalAlignment="Center" Foreground="#E6FFFFFF"/>
-                        <Button Grid.Column="2" Width="18" Height="18" Background="Transparent" BorderThickness="0" Click="btnToggleBaseFavorito_Click" ToolTip="Definir como base padr�o" VerticalAlignment="Center">
+                        <Button Grid.Column="2" Width="18" Height="18" Background="Transparent" BorderThickness="0" Click="btnToggleBaseFavorito_Click" ToolTip="Definir como base padrão" VerticalAlignment="Center">
                           <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#FFC107" VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock.Style>
                               <Style TargetType="TextBlock">
-                                <Setter Property="Text" Value="&#xE735;"/>
+                                <Setter Property="Text" Value="&#xE734;"/>
                                 <Style.Triggers>
                                   <DataTrigger Binding="{Binding IsFavorite}" Value="True">
-                                    <Setter Property="Text" Value="&#xE734;"/>
+                                    <Setter Property="Text" Value="&#xE735;"/>
                                   </DataTrigger>
                                 </Style.Triggers>
                               </Style>
@@ -1162,11 +1166,11 @@
 
                     <!-- Nome do Alias -->
                     <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="NOME DO ALIAS"/>
-                    <TextBox x:Name="txtDbAliasName" Height="34" ui:ControlHelper.CornerRadius="6" ui:ControlHelper.PlaceholderText="Ex: ALIAS_TREINAMENTO" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" Margin="0,0,0,12"/>
+                    <TextBox x:Name="txtDbAliasName" Height="34" ui:ControlHelper.CornerRadius="6" ui:ControlHelper.PlaceholderText="Ex: ALIAS_TREINAMENTO" Background="#1FFFFFFF" BorderBrush="#33FFFFFF" Foreground="White" VerticalContentAlignment="Center" Padding="8,0,8,0" CaretBrush="White" Margin="0,0,0,12" KeyDown="txtDbAliasName_KeyDown"/>
 
                     <!-- Cliente Associado / Perfil -->
                     <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="CLIENTE ASSOCIADO / PERFIL"/>
-                    <ComboBox x:Name="cbClienteAssociado" Height="34" ui:ControlHelper.CornerRadius="6" HorizontalAlignment="Stretch" Margin="0,0,0,12" IsEnabled="False"/>
+                    <ComboBox x:Name="cbClienteAssociado" Height="34" ui:ControlHelper.CornerRadius="6" HorizontalAlignment="Stretch" Margin="0,0,0,12" IsEnabled="True"/>
 
                     <!-- Color Tag Selector -->
                     <TextBlock Margin="0,0,0,6" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Text="MARCADOR DE COR"/>
@@ -1312,7 +1316,7 @@
             </Grid>
           </Border>
         </Grid>
-        </Grid>
+      </Grid>
 
       <!-- Tab 4: SOBRE -->
       <Grid x:Name="gridTabSobre" Visibility="Collapsed" Margin="18,15,18,15">
@@ -1322,7 +1326,7 @@
             <!-- Header -->
             <Image Source="pack://application:,,,/RM_CORE.ico" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,20,0,12" RenderOptions.BitmapScalingMode="HighQuality"/>
             <TextBlock Text="RM Core" FontSize="22" FontWeight="Bold" Foreground="#E6FFFFFF" HorizontalAlignment="Center"/>
-            <TextBlock x:Name="txtVersaoApp" Text="Versão 1.0.0" FontSize="11" Foreground="#80FFFFFF" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="txtVersaoApp" Text="Versão Alpha-0.6.7" FontSize="11" Foreground="#80FFFFFF" HorizontalAlignment="Center"/>
             <TextBlock Text="Central de comando para ambientes TOTVS RM" FontSize="11" Foreground="#4DA6FF" HorizontalAlignment="Center" Margin="0,6,0,0"/>
 
             <!-- Card: VERSÃO -->
@@ -1336,7 +1340,7 @@
                   </Grid.ColumnDefinitions>
                   <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="VERSÃO ATUAL" FontSize="10" Foreground="#80FFFFFF" Margin="0,0,0,2"/>
-                    <TextBlock x:Name="txtVersaoPanel" Text="v1.0.0" FontSize="20" FontWeight="Bold" Foreground="#E6FFFFFF"/>
+                    <TextBlock x:Name="txtVersaoPanel" Text="vAlpha-0.6.7" FontSize="20" FontWeight="Bold" Foreground="#E6FFFFFF"/>
                   </StackPanel>
                   <Button x:Name="btnCheckUpdate" Grid.Column="1" Width="36" Height="36" Style="{StaticResource PremiumCardButtonStyle}" ToolTip="Verificar atualizações" Click="btnCheckUpdate_Click" VerticalAlignment="Center">
                     <Grid>
@@ -1351,7 +1355,7 @@
                 <Border x:Name="bordaNovaVersao" Visibility="Collapsed" Background="#0C10B981" BorderBrush="#1A10B981" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,12,0,0">
                   <StackPanel>
                     <TextBlock x:Name="txtUpdateVersion" Text="" FontSize="12" FontWeight="SemiBold" Foreground="#10B981" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                    <Button x:Name="btnBaixarUpdate" Style="{StaticResource PremiumPrimaryButtonStyle}" Content="Baixar Atualização" Click="btnBaixarUpdate_Click" Height="34" FontSize="11"/>
+                    <Button x:Name="btnBaixarUpdate" Style="{StaticResource PremiumPrimaryButtonStyle}" Content="Atualizar e Reiniciar" Click="btnBaixarUpdate_Click" Height="34" FontSize="11"/>
                   </StackPanel>
                 </Border>
               </StackPanel>
@@ -1464,6 +1468,7 @@
               <Button x:Name="btnImportar" Grid.Column="2" Style="{StaticResource PremiumCardButtonStyle}" Content="Importar" Click="btnImportar_Click" Height="38" FontSize="12"/>
               <Button x:Name="btnResetFabrica" Grid.Column="4" Style="{StaticResource PremiumRedButtonStyle}" Content="Reset de Fabrica" Click="btnResetFabrica_Click" Height="38" FontSize="11"/>
             </Grid>
+            <Button x:Name="btnImportarOutrosApps" AutomationProperties.AutomationId="btnImportarOutrosApps" Style="{StaticResource PremiumCardButtonStyle}" Content="Importar de outros apps (Toolkit / Atalhos)" Click="btnImportarOutrosApps_Click" Height="36" FontSize="12" Margin="0,8,0,0" Width="320"/>
 
             <!-- Card: PRIVACIDADE -->
             <TextBlock Text="PRIVACIDADE" FontSize="11" FontWeight="SemiBold" Foreground="#80FFFFFF" Margin="0,18,0,8" HorizontalAlignment="Left" Width="320"/>
@@ -1523,10 +1528,10 @@
     <!-- BOTTOM NAVIGATION BAR -->
     <Border Grid.Row="1" Background="#141416" BorderBrush="#1AFFFFFF" BorderThickness="0,1,0,0" Height="78" VerticalAlignment="Center">
       <UniformGrid Columns="4" Margin="10,-1,10,4">
-        <RadioButton x:Name="rbTabInicio" IsChecked="True" Style="{StaticResource BottomTabStyle}" Content="&#xED35;" Tag="INÍCIO" Click="Tab_Click"/>
-        <RadioButton x:Name="rbTabPerfil" Style="{StaticResource BottomTabStyle}" Content="&#xE77B;" Tag="CLIENTES" Click="Tab_Click"/>
-        <RadioButton x:Name="rbTabLogs" Style="{StaticResource BottomTabStyle}" Content="&#xE756;" Tag="LOGS" Click="Tab_Click"/>
-        <RadioButton x:Name="rbTabSobre" Style="{StaticResource BottomTabStyle}" Content="&#xE946;" Tag="SOBRE" Click="Tab_Click"/>
+        <RadioButton x:Name="rbTabInicio" IsChecked="True" Style="{StaticResource BottomTabStyle}" Content="&#xED35;" Tag="INÍCIO" Click="Tab_Click" Checked="Tab_Click"/>
+        <RadioButton x:Name="rbTabPerfil" Style="{StaticResource BottomTabStyle}" Content="&#xE77B;" Tag="CLIENTES" Click="Tab_Click" Checked="Tab_Click"/>
+        <RadioButton x:Name="rbTabLogs" Style="{StaticResource BottomTabStyle}" Content="&#xE756;" Tag="LOGS" Click="Tab_Click" Checked="Tab_Click"/>
+        <RadioButton x:Name="rbTabSobre" Style="{StaticResource BottomTabStyle}" Content="&#xE946;" Tag="SOBRE" Click="Tab_Click" Checked="Tab_Click"/>
       </UniformGrid>
     </Border>
 
