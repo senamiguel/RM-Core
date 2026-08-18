@@ -132,7 +132,7 @@ namespace RM_Core
                 AtualizarStatusServicos();
 
                 // Set version text dynamically to reference the control
-                if (txtVersaoApp != null) txtVersaoApp.Text = "Versão Alpha-0.6.7";
+                if (txtVersaoApp != null) txtVersaoApp.Text = "Versão Alpha-0.6.9";
             }
             finally
             {
@@ -5176,7 +5176,7 @@ namespace RM_Core
         {
             if (txtVersaoPanel == null || txtVersionStatus == null) return;
 
-            txtVersaoPanel.Text = "vAlpha-0.6.7";
+            txtVersaoPanel.Text = "vAlpha-0.6.9";
 
             if (_updateCheckFailed)
             {

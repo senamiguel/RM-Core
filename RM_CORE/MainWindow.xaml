@@ -1336,7 +1336,7 @@
             <!-- Header -->
             <Image Source="pack://application:,,,/RM_CORE.ico" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,20,0,12" RenderOptions.BitmapScalingMode="HighQuality"/>
             <TextBlock Text="RM Core" FontSize="22" FontWeight="Bold" Foreground="#E6FFFFFF" HorizontalAlignment="Center"/>
-            <TextBlock x:Name="txtVersaoApp" Text="Versão Alpha-0.6.7" FontSize="11" Foreground="#80FFFFFF" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="txtVersaoApp" Text="Versão Alpha-0.6.9" FontSize="11" Foreground="#80FFFFFF" HorizontalAlignment="Center"/>
             <TextBlock Text="Central de comando para ambientes TOTVS RM" FontSize="11" Foreground="#4DA6FF" HorizontalAlignment="Center" Margin="0,6,0,0"/>
 
             <!-- Card: VERSÃO -->
@@ -1350,7 +1350,7 @@
                   </Grid.ColumnDefinitions>
                   <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="VERSÃO ATUAL" FontSize="10" Foreground="#80FFFFFF" Margin="0,0,0,2"/>
-                    <TextBlock x:Name="txtVersaoPanel" Text="vAlpha-0.6.7" FontSize="20" FontWeight="Bold" Foreground="#E6FFFFFF"/>
+                    <TextBlock x:Name="txtVersaoPanel" Text="vAlpha-0.6.9" FontSize="20" FontWeight="Bold" Foreground="#E6FFFFFF"/>
                   </StackPanel>
                   <Button x:Name="btnCheckUpdate" Grid.Column="1" Width="36" Height="36" Style="{StaticResource PremiumCardButtonStyle}" ToolTip="Verificar atualizações" Click="btnCheckUpdate_Click" VerticalAlignment="Center">
                     <Grid>

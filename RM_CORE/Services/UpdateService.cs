@@ -15,7 +15,7 @@ namespace RM_Core.Services
     {
         // Configure o owner/repo no settings do aplicativo antes de publicar
         private const string RepoUrl = "https://api.github.com/repos/senamiguel/RM-Core/releases/latest";
-        private const string CurrentVersion = "0.6.7";
+        private const string CurrentVersion = "0.6.9";
 
         /// <summary>
         /// Returns <see cref="UpdateInfo"/> when a newer version is available; otherwise null.
@@ -24,7 +24,7 @@ namespace RM_Core.Services
         public async Task<UpdateInfo?> CheckForUpdates()
         {
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("RM-Core/0.6.7");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("RM-Core/0.6.9");
 
             try
             {
@@ -59,14 +59,21 @@ namespace RM_Core.Services
         {
             static int[] Parse(string v)
             {
-                return v.TrimStart('v')
-                        .Split(new[] { '.', '-', '+' }, StringSplitOptions.RemoveEmptyEntries)
-                        .Select(p => int.TryParse(new string(p.TakeWhile(char.IsDigit).ToArray()), out var n) ? n : 0)
+                if (string.IsNullOrWhiteSpace(v)) return Array.Empty<int>();
+                return v.Split(new[] { '.', '-', '+', '_', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(part => new string(part.Where(char.IsDigit).ToArray()))
+                        .Where(digits => !string.IsNullOrEmpty(digits))
+                        .Select(int.Parse)
                         .ToArray();
             }
 
             var p1 = Parse(v1);
             var p2 = Parse(v2);
+
+            if (p1.Length == 0 && p2.Length == 0) return 0;
+            if (p1.Length == 0) return -1;
+            if (p2.Length == 0) return 1;
+
             int len = Math.Min(p1.Length, p2.Length);
 
             for (int i = 0; i < len; i++)
