@@ -35,6 +35,7 @@ namespace RM_Core
         private string _logSearchTerm = "";
         private string? _editingClientOriginalName = null;
         private bool _isCreatingNewClient = false;
+        private volatile bool _isVerboseLogs = true;
 
         // TrayService — system tray / lifecycle management
         private TrayService _trayService = null!;
@@ -1109,7 +1110,13 @@ namespace RM_Core
         private void AddLog(string type, string message)
         {
             // Logs Detalhados OFF → só mostra erros/avisos (ignora info/stdout)
-            bool isVerbose = (tsLogsDetalhados?.IsOn == true) || (tsVerboseLogs?.IsOn == true);
+            bool isVerbose = _isVerboseLogs;
+            if (Dispatcher.CheckAccess())
+            {
+                isVerbose = (tsLogsDetalhados?.IsOn == true) || (tsVerboseLogs?.IsOn == true);
+                _isVerboseLogs = isVerbose;
+            }
+
             if (!isVerbose && type != "error" && type != "warn" && type != "stderr")
                 return;
 
