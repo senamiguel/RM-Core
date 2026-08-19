@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Linq;
 using System.Xml.Linq;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using RM_Core.Data;
 using RM_Core.Data.Models;
@@ -48,6 +49,7 @@ namespace RM_Core
         private UpdateInfo? _pendingUpdate;
         private bool _updateCheckDone = false;
         private bool _updateCheckFailed = false;
+        private CancellationTokenSource? _startupCts;
 
         public static string GetAppDataDir()
         {
@@ -107,7 +109,7 @@ namespace RM_Core
 
                 _telemetry = new RM_Core.Services.Telemetry.TelemetryService(
                     installId: _appSettings.InstallId,
-                    appVersion: "Alpha-0.6.7",
+                    appVersion: GetAppDisplayVersion(),
                     sinks: new List<RM_Core.Services.Telemetry.ITelemetrySink>
                     {
                         new RM_Core.Services.Telemetry.LocalFileTelemetrySink()
@@ -132,7 +134,7 @@ namespace RM_Core
                 AtualizarStatusServicos();
 
                 // Set version text dynamically to reference the control
-                if (txtVersaoApp != null) txtVersaoApp.Text = "Versão Alpha-0.6.9";
+                if (txtVersaoApp != null) txtVersaoApp.Text = $"Versão {GetAppDisplayVersion()}";
             }
             finally
             {
@@ -777,14 +779,15 @@ namespace RM_Core
                 if (cbBase.SelectedItem is AliasConfig ac)
                 {
                     cbAliasDB.SelectedItem = ac.name;
-                    if (cbPerfis.SelectedItem != null && profiles.TryGetValue(cbPerfis.SelectedItem.ToString()!, out var p))
+                    string currentClient = cbPerfis?.SelectedItem?.ToString() ?? cbClienteAtivo?.SelectedItem?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(currentClient) && profiles.TryGetValue(currentClient, out var p))
                     {
                         p.Alias = ac.name;
                         SaveProfiles();
                     }
                     _appSettings.LastBaseId = ac.id;
                     SaveAppSettings();
-                    AddLog("info", $"Base \"{ac.name}\" selecionada.");
+                    AddLog("info", $"Base \"{ac.name}\" selecionada (Usuário RM: {ac.rmUser}, Base: {ac.Base}).");
                 }
             }
             finally
@@ -824,50 +827,73 @@ namespace RM_Core
         private void ts_Toggled(object sender, RoutedEventArgs e)
         {
             if (_isSyncing) return;
-            string activeClient = cbPerfis?.SelectedItem?.ToString()
-                                  ?? cbClienteAtivo?.SelectedItem?.ToString()
-                                  ?? txtNomePerfil?.Text?.Trim()
-                                  ?? string.Empty;
-
-            if (!string.IsNullOrEmpty(activeClient) && profiles.TryGetValue(activeClient, out var prof))
+            _isSyncing = true;
+            try
             {
-                if (tsAutoLogin != null) prof.AutoLogin = tsAutoLogin.IsOn;
-                if (tsVerboseLogs != null) prof.VerboseLogs = tsVerboseLogs.IsOn;
-                if (tsApagarHost != null) prof.ApagarHost = tsApagarHost.IsOn;
-                if (tsNormalizePath != null) prof.NormalizePath = tsNormalizePath.IsOn;
-                if (tsEnableProcessIsolation != null) prof.EnableProcessIsolation = tsEnableProcessIsolation.IsOn;
-                if (tsJobServer3Camadas != null) prof.JobServer3Camadas = tsJobServer3Camadas.IsOn;
-                if (tsEnableCompression != null) prof.EnableCompression = tsEnableCompression.IsOn;
+                string activeClient = cbPerfis?.SelectedItem?.ToString()
+                                      ?? cbClienteAtivo?.SelectedItem?.ToString()
+                                      ?? txtNomePerfil?.Text?.Trim()
+                                      ?? string.Empty;
 
-                // Sincroniza toggles na aba Início
-                if (tsLimparBrokers != null) tsLimparBrokers.IsOn = prof.ApagarHost;
-                if (tsLogsDetalhados != null) tsLogsDetalhados.IsOn = prof.VerboseLogs;
+                ProfileSettings? prof = null;
+                bool hasProfile = !string.IsNullOrEmpty(activeClient) && profiles.TryGetValue(activeClient, out prof);
 
-                SaveProfiles();
+                if (sender == tsLogsDetalhados && tsLogsDetalhados != null)
+                {
+                    bool val = tsLogsDetalhados.IsOn;
+                    _isVerboseLogs = val;
+                    if (hasProfile && prof != null) prof.VerboseLogs = val;
+                    if (tsVerboseLogs != null) tsVerboseLogs.IsOn = val;
+                }
+                else if (sender == tsLimparBrokers && tsLimparBrokers != null)
+                {
+                    bool val = tsLimparBrokers.IsOn;
+                    if (hasProfile && prof != null) prof.ApagarHost = val;
+                    if (tsApagarHost != null) tsApagarHost.IsOn = val;
+                }
+
+                if (hasProfile) SaveProfiles();
+            }
+            finally
+            {
+                _isSyncing = false;
             }
         }
 
         private void ClientToggle_Toggled(object sender, RoutedEventArgs e)
         {
             if (_isSyncing) return;
-            string activeClient = cbPerfis?.SelectedItem?.ToString() ?? cbClienteAtivo?.SelectedItem?.ToString() ?? string.Empty;
-            if (string.IsNullOrEmpty(activeClient)) return;
-
-            if (profiles.TryGetValue(activeClient, out var prof))
+            _isSyncing = true;
+            try
             {
-                if (tsAutoLogin != null) prof.AutoLogin = tsAutoLogin.IsOn;
-                if (tsVerboseLogs != null) prof.VerboseLogs = tsVerboseLogs.IsOn;
-                if (tsApagarHost != null) prof.ApagarHost = tsApagarHost.IsOn;
-                if (tsNormalizePath != null) prof.NormalizePath = tsNormalizePath.IsOn;
-                if (tsEnableProcessIsolation != null) prof.EnableProcessIsolation = tsEnableProcessIsolation.IsOn;
-                if (tsJobServer3Camadas != null) prof.JobServer3Camadas = tsJobServer3Camadas.IsOn;
-                if (tsEnableCompression != null) prof.EnableCompression = tsEnableCompression.IsOn;
+                string activeClient = cbPerfis?.SelectedItem?.ToString() ?? cbClienteAtivo?.SelectedItem?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(activeClient) || !profiles.TryGetValue(activeClient, out var prof)) return;
 
-                // Sincroniza toggles na aba Início
-                if (tsLimparBrokers != null) tsLimparBrokers.IsOn = prof.ApagarHost;
-                if (tsLogsDetalhados != null) tsLogsDetalhados.IsOn = prof.VerboseLogs;
+                if (sender == tsVerboseLogs && tsVerboseLogs != null)
+                {
+                    prof.VerboseLogs = tsVerboseLogs.IsOn;
+                    _isVerboseLogs = tsVerboseLogs.IsOn;
+                    if (tsLogsDetalhados != null) tsLogsDetalhados.IsOn = prof.VerboseLogs;
+                }
+                else if (sender == tsApagarHost && tsApagarHost != null)
+                {
+                    prof.ApagarHost = tsApagarHost.IsOn;
+                    if (tsLimparBrokers != null) tsLimparBrokers.IsOn = prof.ApagarHost;
+                }
+                else
+                {
+                    if (tsAutoLogin != null) prof.AutoLogin = tsAutoLogin.IsOn;
+                    if (tsNormalizePath != null) prof.NormalizePath = tsNormalizePath.IsOn;
+                    if (tsEnableProcessIsolation != null) prof.EnableProcessIsolation = tsEnableProcessIsolation.IsOn;
+                    if (tsJobServer3Camadas != null) prof.JobServer3Camadas = tsJobServer3Camadas.IsOn;
+                    if (tsEnableCompression != null) prof.EnableCompression = tsEnableCompression.IsOn;
+                }
 
                 SaveProfiles();
+            }
+            finally
+            {
+                _isSyncing = false;
             }
         }
 
@@ -1109,7 +1135,6 @@ namespace RM_Core
 
         private void AddLog(string type, string message)
         {
-            // Logs Detalhados OFF → só mostra erros/avisos (ignora info/stdout)
             bool isVerbose = _isVerboseLogs;
             if (Dispatcher.CheckAccess())
             {
@@ -1117,7 +1142,9 @@ namespace RM_Core
                 _isVerboseLogs = isVerbose;
             }
 
-            if (!isVerbose && type != "error" && type != "warn" && type != "stderr")
+            // Logs Detalhados DESATIVADO: oculta apenas o streaming contínuo de stdout dos processos
+            // Eventos do RM Core (info, warn, error, stderr) são exibidos sempre!
+            if (!isVerbose && type.Equals("stdout", StringComparison.OrdinalIgnoreCase))
                 return;
 
             void Append()
@@ -1238,17 +1265,128 @@ namespace RM_Core
             }
 
             SetLoadingState(true);
+            _startupCts?.Dispose();
+            _startupCts = new CancellationTokenSource();
+            var cts = _startupCts;
+
             try
             {
-                AddLog("info", "Iniciando RM + Host Principal...");
-
-                StartHostPrincipal();
                 int hostPort = GetHostPortFromConfig(binDir);
+
+                // 0. Se o Host já estiver aberto e a porta respondendo, abre o RM na hora sem esperar!
+                bool isHostAlreadyRunning = (Process.GetProcessesByName("RM.Host").Length > 0 || Process.GetProcessesByName("RM.Host.ServiceManager").Length > 0)
+                                            && IsPortListening("127.0.0.1", hostPort);
+
+                if (isHostAlreadyRunning)
+                {
+                    AddLog("info", $"Host Principal já está ativo e respondendo na porta {hostPort}. Abrindo RM...");
+                    if (txtBtnIniciarCompleto != null) txtBtnIniciarCompleto.Text = "Abrindo RM...";
+                    await StartRMAsync(checkHost: false);
+                    AddLog("info", "Processo RM iniciado.");
+                    if (txtBtnIniciarCompleto != null) txtBtnIniciarCompleto.Text = "RM Aberto!";
+                    await Task.Delay(1500);
+                    return;
+                }
+
+                AddLog("info", "Iniciando RM + Host Principal...");
+                if (txtBtnIniciarCompleto != null) txtBtnIniciarCompleto.Text = "Iniciando Host...";
+
+                // 1. Inicia o Host Principal
+                StartHostPrincipal();
                 AddLog("info", "Host Principal iniciado.");
-                await WaitForHostPortAsync(hostPort, 15000);
-                await WaitForAuthenticationAsync(binDir, hostPort, 30000);
-                await StartRMAsync(checkHost: false);
-                AddLog("info", "Processo RM iniciado.");
+
+                // 2. Loop de espera de autenticação (15 segundos) com feedback segundo a segundo
+                bool authenticated = false;
+                bool shouldOpenRM = false;
+                int portListeningCount = 0;
+
+                while (!authenticated && !cts.IsCancellationRequested)
+                {
+                    int totalSeconds = 15;
+                    for (int i = 0; i < totalSeconds; i++)
+                    {
+                        if (cts.IsCancellationRequested) break;
+
+                        int remaining = totalSeconds - i;
+                        if (txtBtnIniciarCompleto != null) 
+                            txtBtnIniciarCompleto.Text = $"Aguardando ícone verde ({remaining}s)...";
+
+                        // Tenta verificar se o Host já abriu a porta e autenticou (verde)
+                        if (IsPortListening("127.0.0.1", hostPort))
+                        {
+                            portListeningCount++;
+                            bool isGreen = await WaitForAuthenticationAsync(binDir, hostPort, 1500);
+                            if (isGreen || portListeningCount >= 4)
+                            {
+                                if (txtBtnIniciarCompleto != null) 
+                                    txtBtnIniciarCompleto.Text = "Host online! Confirmando ícone verde...";
+
+                                try { await Task.Delay(3500, cts.Token); } catch (OperationCanceledException) { break; }
+
+                                authenticated = true;
+                                shouldOpenRM = true;
+                                AddLog("info", "✅ Host autenticado (ícone verde confirmado).");
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            portListeningCount = 0;
+                        }
+
+                        try { await Task.Delay(1000, cts.Token); } catch (OperationCanceledException) { break; }
+                    }
+
+                    if (authenticated || cts.IsCancellationRequested) break;
+
+                    // Se passou os 15s e não autenticou, exibe diálogo com 3 opções
+                    if (txtBtnIniciarCompleto != null) txtBtnIniciarCompleto.Text = "Aguardando decisão...";
+
+                    var result = MessageBox.Show(
+                        "O Host ainda não confirmou o ícone verde de autenticação.\n\n" +
+                        "• [Sim] = FORÇAR abertura do RM agora\n" +
+                        "• [Não] = AGUARDAR mais 15 segundos\n" +
+                        "• [Cancelar] = CANCELAR abertura",
+                        "RM Core - Autenticação do Host",
+                        MessageBoxButton.YesNoCancel,
+                        MessageBoxImage.Question);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        // Forçar abertura
+                        shouldOpenRM = true;
+                        AddLog("warn", "Abertura do RM forçada pelo usuário antes da confirmação do ícone verde.");
+                        break;
+                    }
+                    else if (result == MessageBoxResult.No)
+                    {
+                        // Aguardar mais 15 segundos
+                        AddLog("info", "Aguardando mais 15 segundos pela autenticação do Host...");
+                        continue;
+                    }
+                    else
+                    {
+                        // Cancelar
+                        shouldOpenRM = false;
+                        AddLog("info", "Abertura do RM cancelada pelo usuário.");
+                        break;
+                    }
+                }
+
+                // 3. Se confirmado (autenticado ou forçado), abre o RM.exe!
+                if (shouldOpenRM && !cts.IsCancellationRequested)
+                {
+                    if (txtBtnIniciarCompleto != null) txtBtnIniciarCompleto.Text = "Abrindo RM...";
+                    await StartRMAsync(checkHost: false);
+                    AddLog("info", "Processo RM iniciado.");
+
+                    if (txtBtnIniciarCompleto != null) txtBtnIniciarCompleto.Text = "RM Aberto!";
+                    await Task.Delay(1500);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                AddLog("info", "Operação de inicialização cancelada.");
             }
             catch (Exception ex)
             {
@@ -1257,6 +1395,7 @@ namespace RM_Core
             }
             finally
             {
+                if (txtBtnIniciarCompleto != null) txtBtnIniciarCompleto.Text = "Iniciar RM + Host";
                 SetLoadingState(false);
                 AtualizarStatusServicos();
             }
@@ -1364,6 +1503,8 @@ namespace RM_Core
             _telemetry?.Track("feature_used", new Dictionary<string, object> { ["feature"] = "derrubar_tudo" });
             var confirm = MessageBox.Show("Deseja realmente derrubar todos os processos relacionados ao RM em execução?", "Confirmar Operação", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (confirm == MessageBoxResult.No) return;
+
+            _startupCts?.Cancel();
 
             try
             {
@@ -1536,8 +1677,8 @@ namespace RM_Core
 
         private void btnEditarBaseHome_Click(object sender, RoutedEventArgs e)
         {
-            string baseSelecionada = (cbBase.SelectedItem is AliasConfig ac) ? ac.name : (cbBase.SelectedItem?.ToString() ?? string.Empty);
-            if (string.IsNullOrEmpty(baseSelecionada))
+            var activeAlias = GetActiveAlias();
+            if (activeAlias == null)
             {
                 AddLog("warn", "Selecione uma base primeiro.");
                 return;
@@ -1546,15 +1687,15 @@ namespace RM_Core
             // Navega pra aba Clientes > Gerenciar Bases
             rbTabPerfil.IsChecked = true;
             Tab_Click(rbTabPerfil, new RoutedEventArgs());
-            string activeClient = cbClienteAtivo.SelectedItem?.ToString() ?? string.Empty;
+            string activeClient = activeAlias.client;
             if (!string.IsNullOrEmpty(activeClient) && cbPerfis.Items.Contains(activeClient))
                 cbPerfis.SelectedItem = activeClient;
             UpdateFilteredAliasesList();
             gridClientSettingsForm.Visibility = Visibility.Collapsed;
             gridAliasManagerForm.Visibility = Visibility.Visible;
 
-            // Seleciona a base atual na lista
-            var alias = filteredAliases.FirstOrDefault(a => a.name.Equals(baseSelecionada, StringComparison.OrdinalIgnoreCase));
+            // Seleciona exatamente a base ativa na lista
+            var alias = filteredAliases.FirstOrDefault(a => a.id == activeAlias.id || a.name.Equals(activeAlias.name, StringComparison.OrdinalIgnoreCase));
             if (alias != null)
                 lstBases.SelectedItem = alias;
         }
@@ -1964,23 +2105,110 @@ namespace RM_Core
 
         // --- Helper Methods ---
 
-        private string GetBinDirectory()
+        private string GetBinDirectory(string? targetVersion = null)
         {
-            // 1) Versão selecionada na aba Clientes (Prioridade máxima)
-            string selectedVersion = cbVersaoRM?.SelectedItem?.ToString() ?? string.Empty;
-            if (!string.IsNullOrEmpty(selectedVersion))
+            // 1) Determina a versão alvo (Base ativa > Cliente ativo > ComboBox Clientes > Parâmetro)
+            string version = targetVersion ?? string.Empty;
+
+            if (string.IsNullOrEmpty(version))
             {
-                string legacyPath = $@"C:\RM\Legado\{selectedVersion}\Bin";
-                if (Directory.Exists(legacyPath)) return legacyPath;
+                var activeAlias = GetActiveAlias();
+                if (activeAlias != null && !string.IsNullOrWhiteSpace(activeAlias.dbVersion))
+                {
+                    version = activeAlias.dbVersion;
+                }
             }
 
-            // 2) Caminho salvo pelo wizard na 1ª execução (Fallback)
+            if (string.IsNullOrEmpty(version))
+            {
+                string activeClient = cbClienteAtivo?.SelectedItem?.ToString() ?? cbPerfis?.SelectedItem?.ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(activeClient) && profiles.TryGetValue(activeClient, out var prof) && !string.IsNullOrWhiteSpace(prof.RmVersion))
+                {
+                    version = prof.RmVersion;
+                }
+            }
+
+            if (string.IsNullOrEmpty(version))
+            {
+                version = cbVersaoRM?.SelectedItem?.ToString() ?? string.Empty;
+            }
+
+            version = version.Trim();
+
+            // 2) Se temos uma versão definida (ex: "12.1.2502" ou "2502" ou "12.1.2602"):
+            if (!string.IsNullOrEmpty(version))
+            {
+                string[] searchRoots = { @"C:\RM\Legado", @"C:\totvs", @"C:\RM" };
+
+                // 2a. Checagem direta por caminhos canônicos
+                foreach (var root in searchRoots)
+                {
+                    if (!Directory.Exists(root)) continue;
+
+                    string pBin = Path.Combine(root, version, "Bin");
+                    if (Directory.Exists(pBin) && (File.Exists(Path.Combine(pBin, "RM.exe")) || File.Exists(Path.Combine(pBin, "RM.Host.exe")) || File.Exists(Path.Combine(pBin, "RM.Host.ServiceManager.exe"))))
+                        return pBin;
+
+                    string pNet = Path.Combine(root, version, "RM.Net");
+                    if (Directory.Exists(pNet) && (File.Exists(Path.Combine(pNet, "RM.exe")) || File.Exists(Path.Combine(pNet, "RM.Host.exe")) || File.Exists(Path.Combine(pNet, "RM.Host.ServiceManager.exe"))))
+                        return pNet;
+
+                    string pDirect = Path.Combine(root, version);
+                    if (Directory.Exists(pDirect) && (File.Exists(Path.Combine(pDirect, "RM.exe")) || File.Exists(Path.Combine(pDirect, "RM.Host.exe")) || File.Exists(Path.Combine(pDirect, "RM.Host.ServiceManager.exe"))))
+                        return pDirect;
+                }
+
+                // 2b. Checagem difusa / parcial (ex: "2502" casa com "12.1.2502", "12.1.2502" casa com "2502" ou "RM_2502")
+                foreach (var root in searchRoots)
+                {
+                    if (!Directory.Exists(root)) continue;
+
+                    try
+                    {
+                        foreach (var dir in Directory.GetDirectories(root))
+                        {
+                            string dirName = Path.GetFileName(dir);
+                            bool match = dirName.Equals(version, StringComparison.OrdinalIgnoreCase)
+                                         || dirName.EndsWith(version, StringComparison.OrdinalIgnoreCase)
+                                         || version.EndsWith(dirName, StringComparison.OrdinalIgnoreCase)
+                                         || dirName.Contains(version, StringComparison.OrdinalIgnoreCase)
+                                         || version.Contains(dirName, StringComparison.OrdinalIgnoreCase);
+
+                            if (match)
+                            {
+                                string binPath = Path.Combine(dir, "Bin");
+                                if (Directory.Exists(binPath) && (File.Exists(Path.Combine(binPath, "RM.exe")) || File.Exists(Path.Combine(binPath, "RM.Host.exe")) || File.Exists(Path.Combine(binPath, "RM.Host.ServiceManager.exe"))))
+                                    return binPath;
+
+                                string rmNetPath = Path.Combine(dir, "RM.Net");
+                                if (Directory.Exists(rmNetPath) && (File.Exists(Path.Combine(rmNetPath, "RM.exe")) || File.Exists(Path.Combine(rmNetPath, "RM.Host.exe")) || File.Exists(Path.Combine(rmNetPath, "RM.Host.ServiceManager.exe"))))
+                                    return rmNetPath;
+
+                                if (File.Exists(Path.Combine(dir, "RM.exe")) || File.Exists(Path.Combine(dir, "RM.Host.exe")) || File.Exists(Path.Combine(dir, "RM.Host.ServiceManager.exe")))
+                                    return dir;
+                            }
+                        }
+                    }
+                    catch { /* ignore */ }
+                }
+            }
+
+            // 3) Fallback: RmInstallPath configurado pelo usuário nas configurações do app
             if (!string.IsNullOrEmpty(_appSettings.RmInstallPath) && Directory.Exists(_appSettings.RmInstallPath))
             {
                 return _appSettings.RmInstallPath;
             }
 
-            // 3) Qualquer Bin dentro de C:\RM\Legado (pega o primeiro)
+            // 4) Fallback: C:\totvs\CorporeRM\RM.Net (padrão de instalação oficial)
+            string defaultTotvs = @"C:\totvs\CorporeRM\RM.Net";
+            if (Directory.Exists(defaultTotvs) && (File.Exists(Path.Combine(defaultTotvs, "RM.exe")) || File.Exists(Path.Combine(defaultTotvs, "RM.Host.exe"))))
+                return defaultTotvs;
+
+            string defaultTotvsBin = @"C:\totvs\CorporeRM\RM.Net\Bin";
+            if (Directory.Exists(defaultTotvsBin) && (File.Exists(Path.Combine(defaultTotvsBin, "RM.exe")) || File.Exists(Path.Combine(defaultTotvsBin, "RM.Host.exe"))))
+                return defaultTotvsBin;
+
+            // 5) Fallback: Qualquer pasta dentro de C:\RM\Legado que tenha RM.exe
             try
             {
                 if (Directory.Exists(@"C:\RM\Legado"))
@@ -1988,17 +2216,13 @@ namespace RM_Core
                     foreach (var dir in Directory.GetDirectories(@"C:\RM\Legado"))
                     {
                         string bin = Path.Combine(dir, "Bin");
-                        if (Directory.Exists(bin)) return bin;
+                        if (Directory.Exists(bin) && (File.Exists(Path.Combine(bin, "RM.exe")) || File.Exists(Path.Combine(bin, "RM.Host.exe"))))
+                            return bin;
                     }
                 }
             }
             catch { /* ignore */ }
 
-            // 4) Última opção: c:\totvs (legado), só se existir
-            string corpPath = @"C:\totvs\CorporeRM\RM.Net";
-            if (Directory.Exists(corpPath)) return corpPath;
-
-            // Nada encontrado — caller vai mostrar erro
             return string.Empty;
         }
 
@@ -2194,18 +2418,21 @@ namespace RM_Core
         {
             PrepareAlias();
 
-            string binDir = GetBinDirectory();
+            var activeAlias = GetActiveAlias();
+            string binDir = GetBinDirectory(activeAlias?.dbVersion);
             CleanBrokerCustomIfNeeded(binDir);
 
             string path = Path.Combine(binDir, "RM.Host.exe");
             if (!File.Exists(path))
                 path = Path.Combine(binDir, "RM.Host.ServiceManager.exe");
 
+            AddLog("info", $"[Host Principal] Executável: {path} (Versão: {activeAlias?.dbVersion ?? "N/D"}, Base: {activeAlias?.name ?? "N/D"})");
             StartHostProcess(path, "Host Principal");
         }
 
         private void StopHostPrincipal()
         {
+            _startupCts?.Cancel();
             KillProcessByName("RM.Host.ServiceManager");
             KillProcessByName("RM.Host");
         }
@@ -2226,6 +2453,7 @@ namespace RM_Core
 
         private void StopHost2()
         {
+            _startupCts?.Cancel();
             KillProcessByName("RM.Host1");
             KillProcessByName("RM.Host");
         }
@@ -2341,8 +2569,11 @@ namespace RM_Core
                     {
                         AddLog("info", "Iniciando Host Principal antes de abrir o RM...");
                         StartHostPrincipal();
-                        await WaitForHostPortAsync(hostPort, 15000);
-                        await WaitForAuthenticationAsync(binDir, hostPort, 30000);
+                        _ = Task.Run(async () =>
+                        {
+                            await WaitForHostPortAsync(hostPort, 10000);
+                            await WaitForAuthenticationAsync(binDir, hostPort, 20000);
+                        });
                     }
                 }
             }
@@ -2361,7 +2592,7 @@ namespace RM_Core
                         string user = string.IsNullOrWhiteSpace(activeAlias.rmUser) ? "mestre" : activeAlias.rmUser;
                         string pass = string.IsNullOrWhiteSpace(activeAlias.rmPass) ? "totvs" : activeAlias.rmPass;
 
-                        string args = $"alias=\"CorporeRM\" user=\"{user}\" password=\"{pass}\"";
+                        string args = $"alias=CorporeRM user=\"{user}\" password=\"{pass}\"";
 
                         Process.Start(new ProcessStartInfo
                         {
@@ -2370,7 +2601,7 @@ namespace RM_Core
                             UseShellExecute = true,
                             WorkingDirectory = binDir
                         });
-                        AddLog("info", $"RM.exe iniciado com AutoLogin na base \"{activeAlias.name}\" (Base: {activeAlias.Base}, Usuário: {user}).");
+                        AddLog("info", $"[RM.exe] Iniciado com AutoLogin na base \"{activeAlias.name}\" (Cliente: {activeAlias.client}, Versão: {activeAlias.dbVersion}, Pasta: {binDir}, Usuário RM: {user}).");
                     }
                     else
                     {
@@ -2381,7 +2612,7 @@ namespace RM_Core
                             UseShellExecute = true,
                             WorkingDirectory = binDir
                         });
-                        AddLog("info", "RM.exe iniciado sem AutoLogin.");
+                        AddLog("info", $"[RM.exe] Iniciado sem AutoLogin (Pasta: {binDir}).");
                     }
                 }
                 catch (Exception ex)
@@ -2541,7 +2772,9 @@ namespace RM_Core
                 string[] baseDirs = {
                     AppDomain.CurrentDomain.BaseDirectory,
                     Environment.CurrentDirectory,
-                    Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "."
+                    Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? ".",
+                    @"C:\Program Files\RM_CORE",
+                    @"C:\Program Files\RM_CORE\tools"
                 };
 
                 foreach (var baseDir in baseDirs)
@@ -2589,7 +2822,7 @@ namespace RM_Core
                 }
             }
             catch { }
-            return hostPort + 500;
+            return hostPort;
         }
 
         private async Task<bool> WaitForAuthenticationAsync(string binDir, int hostPort, int timeoutMs)
@@ -2597,7 +2830,6 @@ namespace RM_Core
             string? hostCheckExe = FindHostCheckExe();
             if (hostCheckExe == null)
             {
-                AddLog("warning", "RM.HostCheck.exe não encontrado — pulando verificação de ícone verde.");
                 return false;
             }
 
@@ -2605,8 +2837,6 @@ namespace RM_Core
 
             try
             {
-                AddLog("info", $"Aguardando ícone verde (autenticação) na porta {hcPort}...");
-
                 var psi = new ProcessStartInfo
                 {
                     FileName = hostCheckExe,
@@ -2618,40 +2848,20 @@ namespace RM_Core
                 };
 
                 using var proc = Process.Start(psi);
-                if (proc == null)
-                {
-                    AddLog("error", "Falha ao iniciar RM.HostCheck.exe.");
-                    return false;
-                }
+                if (proc == null) return false;
 
-                var stderrTask = proc.StandardError.ReadToEndAsync();
-                var stdoutTask = proc.StandardOutput.ReadToEndAsync();
                 await proc.WaitForExitAsync();
 
-                string stderr = await stderrTask;
-                string stdout = await stdoutTask;
-
-                if (!string.IsNullOrWhiteSpace(stderr))
+                if (proc.ExitCode == 0)
                 {
-                    AddLog("warn", $"[HostCheck] {stderr.Trim()}");
-                }
-                if (!string.IsNullOrWhiteSpace(stdout))
-                {
-                    AddLog("info", $"[HostCheck] {stdout.Trim()}");
+                    AddLog("info", "✅ Ícone verde confirmado (Host autenticado com sucesso).");
+                    return true;
                 }
 
-                AddLog("info", proc.ExitCode switch
-                {
-                    0 => "Ícone verde confirmado (Host autenticado com sucesso).",
-                    1 => "Host Client rodando mas não autenticou no tempo limite.",
-                    _ => $"HostCheck retornou código {proc.ExitCode}. Prosseguindo..."
-                });
-
-                return proc.ExitCode == 0;
+                return false;
             }
-            catch (Exception ex)
+            catch
             {
-                AddLog("warning", $"HostCheck falhou: {ex.Message}");
                 return false;
             }
         }
@@ -3120,48 +3330,12 @@ namespace RM_Core
         {
             _isOperationRunning = loading;
             
-            // Disable all interactive UI elements to prevent spam clicks
-            btnIniciarCompleto.IsEnabled = !loading;
-            btnIniciarDropdown.IsEnabled = !loading;
-            btnDerrubarTudo.IsEnabled = !loading;
-            btnCustom.IsEnabled = !loading;
-            btnAliases.IsEnabled = !loading;
-            btnBin.IsEnabled = !loading;
-            btnDelDll.IsEnabled = !loading;
-            btnInstalarDualHost.IsEnabled = !loading;
-            btnValidarDLLs.IsEnabled = !loading;
-            btnReiniciarIIS.IsEnabled = !loading;
-            btnConfigIIS.IsEnabled = !loading;
-            btnReciclarAppPool.IsEnabled = !loading;
-            btnLimparTemp.IsEnabled = !loading;
-            btnSalvarPerfil.IsEnabled = !loading;
-            btnDeletarPerfil.IsEnabled = !loading;
-            // btnImportarAmbientes and btnImportarAliases removed
-            btnGerenciarAliases.IsEnabled = !loading;
-            btnVoltarCliente.IsEnabled = !loading;
-            btnNovaBase.IsEnabled = !loading;
-            btnSalvarBase.IsEnabled = !loading;
-            btnTestarConexao.IsEnabled = !loading;
-            btnDeletarBase.IsEnabled = !loading;
-            btnDuplicarBase.IsEnabled = !loading;
-            btnBaixarUpdate.IsEnabled = !loading;
-            btnLimparLogs.IsEnabled = !loading;
-            btnAbrirSSMS.IsEnabled = !loading;
-            btnAtualizarServicos.IsEnabled = !loading;
-            if (btnImportarOutrosAppsCliente != null) btnImportarOutrosAppsCliente.IsEnabled = !loading;
-            if (btnImportarOutrosAppsHeader != null) btnImportarOutrosAppsHeader.IsEnabled = !loading;
-            if (btnImportarOutrosApps != null) btnImportarOutrosApps.IsEnabled = !loading;
-            
-            menuIniciarSeparado.IsEnabled = !loading;
+            // Apenas previne duplo clique no botão principal de iniciar sem travar a interface
+            if (btnIniciarCompleto != null) btnIniciarCompleto.IsEnabled = !loading;
+            if (btnIniciarDropdown != null) btnIniciarDropdown.IsEnabled = !loading;
 
-            if (loading)
-            {
-                System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
-            }
-            else
-            {
-                System.Windows.Input.Mouse.OverrideCursor = null;
-            }
+            // Mantém sempre o cursor normal do Windows (sem roleta/ampulheta girando)
+            System.Windows.Input.Mouse.OverrideCursor = null;
         }
 
         public void AtualizarStatusServicos()
@@ -5172,11 +5346,31 @@ namespace RM_Core
             }
         }
 
+        public static string GetAppDisplayVersion()
+        {
+            try
+            {
+                var infoVer = System.Reflection.Assembly.GetExecutingAssembly()
+                    .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+                if (!string.IsNullOrEmpty(infoVer))
+                {
+                    int plusIdx = infoVer.IndexOf('+');
+                    return plusIdx >= 0 ? infoVer.Substring(0, plusIdx) : infoVer;
+                }
+                var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                return ver != null ? $"Alpha-{ver.Major}.{ver.Minor}.{ver.Build}" : "Alpha-0.6.9";
+            }
+            catch
+            {
+                return "Alpha-0.6.9";
+            }
+        }
+
         private void AtualizarPanelVersao()
         {
             if (txtVersaoPanel == null || txtVersionStatus == null) return;
 
-            txtVersaoPanel.Text = "vAlpha-0.6.9";
+            txtVersaoPanel.Text = $"v{GetAppDisplayVersion()}";
 
             if (_updateCheckFailed)
             {

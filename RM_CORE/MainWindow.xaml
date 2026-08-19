@@ -497,7 +497,7 @@
                         HorizontalAlignment="Stretch" Click="btnIniciarCompleto_Click">
                   <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                    <TextBlock VerticalAlignment="Center" Text="Iniciar RM + Host"/>
+                    <TextBlock x:Name="txtBtnIniciarCompleto" VerticalAlignment="Center" Text="Iniciar RM + Host"/>
                   </StackPanel>
                 </Button>
 
