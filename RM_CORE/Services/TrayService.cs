@@ -21,6 +21,8 @@ namespace RM_Core.Services
         {
             _mainWindow = mainWindow ?? throw new ArgumentNullException(nameof(mainWindow));
 
+            AllowUipiMessages();
+
             _notifyIcon = new NotifyIcon
             {
                 Text = "RM Core",
@@ -33,6 +35,48 @@ namespace RM_Core.Services
 
             // Double-click shows and activates the main window
             _notifyIcon.DoubleClick += (_, _) => ShowMainWindow();
+            _notifyIcon.MouseDoubleClick += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left) ShowMainWindow();
+            };
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool ChangeWindowMessageFilter(uint message, uint dwFlag);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        private static extern uint RegisterWindowMessage(string lpString);
+
+        private const uint MSGFLT_ADD = 1;
+
+        private static void AllowUipiMessages()
+        {
+            try
+            {
+                uint[] messages = {
+                    0x004A, // WM_COPYDATA
+                    0x0111, // WM_COMMAND
+                    0x0200, // WM_MOUSEMOVE
+                    0x0201, // WM_LBUTTONDOWN
+                    0x0202, // WM_LBUTTONUP
+                    0x0203, // WM_LBUTTONDBLCLK
+                    0x0204, // WM_RBUTTONDOWN
+                    0x0205, // WM_RBUTTONUP
+                    0x0400  // WM_USER
+                };
+
+                foreach (var msg in messages)
+                {
+                    ChangeWindowMessageFilter(msg, MSGFLT_ADD);
+                }
+
+                uint taskbarCreated = RegisterWindowMessage("TaskbarCreated");
+                if (taskbarCreated != 0)
+                {
+                    ChangeWindowMessageFilter(taskbarCreated, MSGFLT_ADD);
+                }
+            }
+            catch { }
         }
 
         // ---------------------------------------------------------------
@@ -145,28 +189,51 @@ namespace RM_Core.Services
             }));
         }
 
-        private void ShowMainWindow()
+        private const int SW_RESTORE = 9;
+        private const int SW_SHOW = 5;
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        public void ShowMainWindow()
         {
             _mainWindow.Dispatcher.BeginInvoke(new Action(() =>
             {
-                _mainWindow.Show();
-
-                if (!_mainWindow.IsPositionOnScreen(_mainWindow.Left, _mainWindow.Top,
-                                                    _mainWindow.Width, _mainWindow.Height))
+                try
                 {
-                    var workArea = SystemParameters.WorkArea;
-                    _mainWindow.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual;
-                    _mainWindow.Left = workArea.Left + (workArea.Width  - _mainWindow.Width)  / 2;
-                    _mainWindow.Top  = workArea.Top  + (workArea.Height - _mainWindow.Height) / 2;
+                    _mainWindow.Show();
+                    _mainWindow.Visibility = Visibility.Visible;
+                    _mainWindow.ShowInTaskbar = true;
+                    _mainWindow.WindowState = WindowState.Normal;
+
+                    var helper = new System.Windows.Interop.WindowInteropHelper(_mainWindow);
+                    IntPtr hwnd = helper.EnsureHandle();
+                    if (hwnd != IntPtr.Zero)
+                    {
+                        ShowWindow(hwnd, SW_RESTORE);
+                        SetForegroundWindow(hwnd);
+                    }
+
+                    if (!_mainWindow.IsPositionOnScreen(_mainWindow.Left, _mainWindow.Top,
+                                                        _mainWindow.Width, _mainWindow.Height) 
+                        || double.IsNaN(_mainWindow.Left) || double.IsNaN(_mainWindow.Top) 
+                        || _mainWindow.Left <= -10000 || _mainWindow.Top <= -10000)
+                    {
+                        var workArea = SystemParameters.WorkArea;
+                        _mainWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+                        _mainWindow.Left = workArea.Left + Math.Max(0, (workArea.Width  - _mainWindow.Width)  / 2);
+                        _mainWindow.Top  = workArea.Top  + Math.Max(0, (workArea.Height - _mainWindow.Height) / 2);
+                    }
+
+                    _mainWindow.Topmost = true;
+                    _mainWindow.Activate();
+                    _mainWindow.Topmost = false;
+                    _mainWindow.Focus();
                 }
-
-                if (_mainWindow.WindowState == System.Windows.WindowState.Minimized)
-                    _mainWindow.WindowState = System.Windows.WindowState.Normal;
-
-                _mainWindow.Topmost = true;
-                _mainWindow.Activate();
-                _mainWindow.Topmost = false;
-                _mainWindow.Focus();
+                catch { }
             }));
         }
 
@@ -231,11 +298,11 @@ namespace RM_Core.Services
 
             try
             {
-                _mainWindow.Dispatcher.BeginInvoke(new Action(() =>
+                _mainWindow.Dispatcher.Invoke(() =>
                 {
                     try { _mainWindow.Close(); } catch { }
                     try { Application.Current?.Shutdown(); } catch { }
-                }));
+                }, System.Windows.Threading.DispatcherPriority.Send, TimeSpan.FromMilliseconds(300));
             }
             catch { }
 

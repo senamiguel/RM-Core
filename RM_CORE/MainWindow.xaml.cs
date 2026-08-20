@@ -3165,6 +3165,8 @@ namespace RM_Core
         {
             try
             {
+                if (Left <= -10000 || Top <= -10000) return;
+
                 double left = Left;
                 double top = Top;
                 double width = Width;
@@ -3172,15 +3174,18 @@ namespace RM_Core
 
                 if (WindowState == WindowState.Maximized || WindowState == WindowState.Minimized)
                 {
-                    left = RestoreBounds.Left;
-                    top = RestoreBounds.Top;
-                    width = RestoreBounds.Width;
-                    height = RestoreBounds.Height;
+                    if (RestoreBounds.Width > 0 && RestoreBounds.Height > 0)
+                    {
+                        left = RestoreBounds.Left;
+                        top = RestoreBounds.Top;
+                        width = RestoreBounds.Width;
+                        height = RestoreBounds.Height;
+                    }
                 }
 
-                // Fallback to default sizes if width or height are too small or invalid
-                if (width < 450) width = 450;
-                if (height < 710) height = 710;
+                if (double.IsNaN(width) || width < 450) width = 450;
+                if (double.IsNaN(height) || height < 710) height = 710;
+                if (double.IsNaN(left) || double.IsNaN(top) || left <= -10000 || top <= -10000) return;
 
                 var settings = new WindowSettings
                 {
@@ -3213,7 +3218,7 @@ namespace RM_Core
                     Width  = settings.Width;
                     Height = settings.Height;
                 }
-                if (IsPositionOnScreen(settings.Left, settings.Top, settings.Width, settings.Height))
+                if (settings.Left > -10000 && settings.Top > -10000 && IsPositionOnScreen(settings.Left, settings.Top, settings.Width, settings.Height))
                 {
                     Left = settings.Left;
                     Top  = settings.Top;
@@ -5318,15 +5323,19 @@ namespace RM_Core
                 {
                     _pendingUpdate     = info;
                     _updateCheckFailed = false;
-                    Dispatcher.Invoke(() =>
+                    Dispatcher.BeginInvoke(new Action(() =>
                     {
-                        _trayService.ShowToast(
-                            "Atualização disponível!",
-                            $"Versão {info.Version} disponível. Acesse a aba Sobre para baixar.");
-                        AddLog("info", $"[Auto-Update] Nova versão disponível: {info.Version}");
-                        if (gridTabSobre.Visibility == Visibility.Visible)
-                            AtualizarPanelVersao();
-                    });
+                        try
+                        {
+                            _trayService.ShowToast(
+                                "Atualização disponível!",
+                                $"Versão {info.Version} disponível. Acesse a aba Sobre para baixar.");
+                            AddLog("info", $"[Auto-Update] Nova versão disponível: {info.Version}");
+                            if (gridTabSobre.Visibility == Visibility.Visible)
+                                AtualizarPanelVersao();
+                        }
+                        catch { }
+                    }));
                 }
                 else
                 {
@@ -5342,7 +5351,7 @@ namespace RM_Core
             finally
             {
                 _updateCheckDone = true;
-                Dispatcher.Invoke(AtualizarPanelVersao);
+                Dispatcher.BeginInvoke(new Action(AtualizarPanelVersao));
             }
         }
 
