@@ -5,7 +5,7 @@
   <p>
     <img src="https://img.shields.io/badge/.NET-9.0-512BD4?style=flat&logo=dotnet" alt=".NET 9">
     <img src="https://img.shields.io/badge/WPF-iNKORE%20UI-0078D4?style=flat" alt="WPF iNKORE">
-    <img src="https://img.shields.io/badge/Release-Alpha--0.6.9-blue?style=flat" alt="Alpha-0.6.9">
+    <img src="https://img.shields.io/badge/Release-Alpha--0.6.11-blue?style=flat" alt="Alpha-0.6.11">
     <img src="https://img.shields.io/badge/license-MIT-green?style=flat" alt="MIT">
   </p>
 </div>
@@ -37,7 +37,7 @@ O **RM Core** é uma central moderna e completa de gerenciamento de ambientes TO
 ### Via instalador (Recomendado)
 
 1. Baixe o instalador na página de [Releases](https://github.com/senamiguel/RM-Core/releases).
-2. Execute o instalador `RM-Core-Setup-Alpha-0.6.9.exe`.
+2. Execute o instalador `RM-Core-Setup-Alpha-0.6.11.exe`.
 3. O instalador verifica se o .NET 9 Desktop Runtime está presente e instala se necessário.
 4. Ao concluir, o RM Core iniciará diretamente com o assistente de configuração.
 
@@ -58,7 +58,7 @@ cd installer
 .\build-installer.ps1
 ```
 
-O executável compilado será gerado em `installer/dist/RM-Core-Setup-Alpha-0.6.9.exe`.
+O executável compilado será gerado em `installer/dist/RM-Core-Setup-Alpha-0.6.11.exe`.
 
 ## Estrutura do Projeto
 

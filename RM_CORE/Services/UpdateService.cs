@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -15,7 +16,26 @@ namespace RM_Core.Services
     {
         // Configure o owner/repo no settings do aplicativo antes de publicar
         private const string RepoUrl = "https://api.github.com/repos/senamiguel/RM-Core/releases/latest";
-        private const string CurrentVersion = "0.6.9";
+
+        public static string GetCurrentAppVersion()
+        {
+            try
+            {
+                var infoVer = System.Reflection.Assembly.GetExecutingAssembly()
+                    .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+                if (!string.IsNullOrEmpty(infoVer))
+                {
+                    int plusIdx = infoVer.IndexOf('+');
+                    return plusIdx >= 0 ? infoVer.Substring(0, plusIdx) : infoVer;
+                }
+                var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "0.0.0";
+            }
+            catch
+            {
+                return "0.0.0";
+            }
+        }
 
         /// <summary>
         /// Returns <see cref="UpdateInfo"/> when a newer version is available; otherwise null.
@@ -23,8 +43,10 @@ namespace RM_Core.Services
         /// </summary>
         public async Task<UpdateInfo?> CheckForUpdates()
         {
+            string currentVersion = GetCurrentAppVersion();
+
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("RM-Core/0.6.9");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd($"RM-Core/{currentVersion.Replace(" ", "_")}");
 
             try
             {
@@ -35,7 +57,7 @@ namespace RM_Core.Services
                 if (release == null || string.IsNullOrWhiteSpace(release.TagName))
                     return null;
 
-                if (CompareVersions(release.TagName, CurrentVersion) > 0)
+                if (CompareVersions(release.TagName, currentVersion) > 0)
                 {
                     return new UpdateInfo
                     {
@@ -86,7 +108,7 @@ namespace RM_Core.Services
         }
 
         /// <summary>
-        /// Baixa o instalador da release do GitHub e executa a auto-atualização silenciosa, reiniciando o app.
+        /// Baixa o instalador da release do GitHub e executa a atualização de forma segura.
         /// </summary>
         public async Task DownloadAndApplyUpdateAsync(string downloadUrl, Action<int>? onProgress = null)
         {
@@ -104,63 +126,50 @@ namespace RM_Core.Services
             response.EnsureSuccessStatusCode();
 
             long totalBytes = response.Content.Headers.ContentLength ?? -1L;
-            await using var stream = await response.Content.ReadAsStreamAsync();
-            await using var fileStream = new System.IO.FileStream(tempInstaller, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None);
-
-            var buffer = new byte[81920];
-            long totalRead = 0;
-            int bytesRead;
-
-            while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            await using (var stream = await response.Content.ReadAsStreamAsync())
+            await using (var fileStream = new System.IO.FileStream(tempInstaller, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None))
             {
-                await fileStream.WriteAsync(buffer, 0, bytesRead);
-                totalRead += bytesRead;
-                if (totalBytes > 0 && onProgress != null)
+                var buffer = new byte[81920];
+                long totalRead = 0;
+                int bytesRead;
+                int lastReportedPercent = -1;
+
+                while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                 {
-                    int percent = (int)((totalRead * 100) / totalBytes);
-                    onProgress(percent);
+                    await fileStream.WriteAsync(buffer, 0, bytesRead);
+                    totalRead += bytesRead;
+                    if (totalBytes > 0 && onProgress != null)
+                    {
+                        int percent = (int)((totalRead * 100) / totalBytes);
+                        if (percent != lastReportedPercent)
+                        {
+                            lastReportedPercent = percent;
+                            onProgress(percent);
+                        }
+                    }
                 }
+
+                await fileStream.FlushAsync();
             }
 
-            await fileStream.FlushAsync();
-            fileStream.Close();
-
-            // Caminho do executável atual para relançar após atualizar
-            string currentExe = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName 
-                                ?? Environment.ProcessPath 
-                                ?? @"C:\Program Files\RM Core\RM Core.exe";
-
-            int pid = System.Diagnostics.Process.GetCurrentProcess().Id;
-
-            // Cria um script .bat temporário que aguarda o processo atual fechar, roda o instalador silenciosamente e reabre o app
-            string updateScriptPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "rmcore_apply_update.cmd");
-            string scriptContent = $@"@echo off
-timeout /t 1 /nobreak > nul
-:wait_loop
-tasklist /FI ""PID eq {pid}"" 2>NUL | find /I ""{pid}"" >NUL
-if ""%ERRORLEVEL%""==""0"" (
-    timeout /t 1 /nobreak > nul
-    goto wait_loop
-)
-
-""{tempInstaller}"" /SILENT /SUPPRESSMSGBOXES /NORESTART
-timeout /t 1 /nobreak > nul
-start """" ""{currentExe}""
-del ""{updateScriptPath}"" >nul 2>&1
-";
-
-            System.IO.File.WriteAllText(updateScriptPath, scriptContent);
-
+            // Inicia o instalador
             var psi = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = "cmd.exe",
-                Arguments = $"/c \"\"{updateScriptPath}\"\"",
-                CreateNoWindow = true,
-                UseShellExecute = true,
-                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                FileName = tempInstaller,
+                Arguments = "/CLOSEAPPLICATIONS",
+                UseShellExecute = true
             };
 
-            System.Diagnostics.Process.Start(psi);
+            try
+            {
+                psi.Verb = "runas";
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch
+            {
+                psi.Verb = string.Empty;
+                System.Diagnostics.Process.Start(psi);
+            }
         }
     }
 

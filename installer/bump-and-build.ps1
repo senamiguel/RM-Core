@@ -71,7 +71,18 @@ $issContent = [regex]::Replace($issContent, '#define MyAppNumericVersion "[^"]+"
 [System.IO.File]::WriteAllText($issFile, $issContent, [System.Text.Encoding]::UTF8)
 Write-Host "  [OK] RMCore.iss atualizado para $newInformationalVersion" -ForegroundColor DarkGreen
 
-# 5. Executa build-installer.ps1
+# 5. Atualiza README.md
+$readmeFile = Join-Path $root "README.md"
+if (Test-Path $readmeFile) {
+    $readmeContent = Get-Content -LiteralPath $readmeFile -Raw -Encoding UTF8
+    $readmeContent = [regex]::Replace($readmeContent, 'Release-Alpha--[0-9\.]+-blue', "Release-Alpha--$newVersion-blue")
+    $readmeContent = [regex]::Replace($readmeContent, 'alt="Alpha-[0-9\.]+"', "alt=`"Alpha-$newVersion`"")
+    $readmeContent = [regex]::Replace($readmeContent, 'RM-Core-Setup-Alpha-[0-9\.]+\.exe', "RM-Core-Setup-Alpha-$newVersion.exe")
+    [System.IO.File]::WriteAllText($readmeFile, $readmeContent, [System.Text.Encoding]::UTF8)
+    Write-Host "  [OK] README.md atualizado para $newInformationalVersion" -ForegroundColor DarkGreen
+}
+
+# 6. Executa build-installer.ps1
 Write-Host "`nIniciando compilação do instalador..." -ForegroundColor Cyan
 $buildScript = Join-Path $installerDir "build-installer.ps1"
 & $buildScript

@@ -5370,7 +5370,10 @@ namespace RM_Core
         {
             if (txtVersaoPanel == null || txtVersionStatus == null) return;
 
-            txtVersaoPanel.Text = $"v{GetAppDisplayVersion()}";
+            string displayVer = GetAppDisplayVersion();
+            txtVersaoPanel.Text = (displayVer.StartsWith("v", StringComparison.OrdinalIgnoreCase) || displayVer.StartsWith("Alpha", StringComparison.OrdinalIgnoreCase))
+                ? displayVer
+                : $"v{displayVer}";
 
             if (_updateCheckFailed)
             {
@@ -5382,7 +5385,11 @@ namespace RM_Core
             {
                 txtVersionStatus.Text = "Nova versão disponível!";
                 txtVersionStatus.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129));
-                txtUpdateVersion.Text = $"v{_pendingUpdate.Version} — Baixar agora";
+                string updateVer = _pendingUpdate.Version;
+                string updateVerFormatted = (updateVer.StartsWith("v", StringComparison.OrdinalIgnoreCase) || updateVer.StartsWith("Alpha", StringComparison.OrdinalIgnoreCase))
+                    ? updateVer
+                    : $"v{updateVer}";
+                txtUpdateVersion.Text = $"{updateVerFormatted} — Baixar agora";
                 bordaNovaVersao.Visibility = Visibility.Visible;
             }
             else if (_updateCheckDone)
@@ -5437,21 +5444,24 @@ namespace RM_Core
                     var svc = new UpdateService();
                     await svc.DownloadAndApplyUpdateAsync(_pendingUpdate.DownloadUrl, percent =>
                     {
-                        Dispatcher.Invoke(() =>
+                        Dispatcher.BeginInvoke(new Action(() =>
                         {
                             btnBaixarUpdate.Content = $"Baixando ({percent}%)...";
-                        });
+                        }));
                     });
 
-                    btnBaixarUpdate.Content = "Instalando e reiniciando...";
-                    AddLog("info", "[Auto-Update] Download concluído com sucesso. Reiniciando o app...");
+                    btnBaixarUpdate.Content = "Iniciando instalador...";
+                    AddLog("info", "[Auto-Update] Download concluído com sucesso. Iniciando instalador...");
 
-                    await Task.Delay(800);
+                    await Task.Delay(600);
 
                     IsExiting = true;
                     SaveWindowSettings();
                     SaveAppSettings();
+                    try { _trayService?.Dispose(); } catch { }
+                    
                     Application.Current.Shutdown();
+                    Environment.Exit(0);
                 }
                 catch (Exception ex)
                 {

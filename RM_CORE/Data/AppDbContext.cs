@@ -22,7 +22,7 @@ namespace RM_Core.Data
             {
                 Directory.CreateDirectory(dbFolder);
             }
-            options.UseSqlite($"Data Source={Path.Combine(dbFolder, "rmcore.db")}");
+            options.UseSqlite($"Data Source={Path.Combine(dbFolder, "rmcore.db")};Default Timeout=5;Pooling=True");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
