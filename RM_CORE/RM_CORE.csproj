@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -15,10 +15,10 @@
 		<Description>RM Core - Gerenciador de Ambientes e Bases TOTVS RM</Description>
 		<Company>Miguel Sena</Company>
 		<Copyright>Copyright © 2026 Miguel Sena</Copyright>
-    <Version>0.6.11</Version>
-    <AssemblyVersion>0.6.11.0</AssemblyVersion>
-    <FileVersion>0.6.11.0</FileVersion>
-    <InformationalVersion>Alpha-0.6.11</InformationalVersion>
+    <Version>0.6.12</Version>
+    <AssemblyVersion>0.6.12.0</AssemblyVersion>
+    <FileVersion>0.6.12.0</FileVersion>
+    <InformationalVersion>Alpha-0.6.12</InformationalVersion>
     <PathMap>$(MSBuildProjectDirectory)=/RM_Core</PathMap>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
