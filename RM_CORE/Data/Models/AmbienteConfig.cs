@@ -6,7 +6,7 @@ namespace RM_Core.Data.Models
     {
         public int Id { get; set; }
         public int AmbienteId { get; set; }
-        public Ambiente Ambiente { get; set; } = null!;
+        public Ambiente? Ambiente { get; set; }
 
         public bool JobServer3Camadas { get; set; }
         public string DefaultDB { get; set; } = "CorporeRM";

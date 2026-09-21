@@ -190,4 +190,188 @@ public sealed class ToolkitImportTests : IDisposable
 
         Log("=== Teste Idempotência de Importação concluído com SUCESSO ===");
     }
+
+    [Fact]
+    [Trait("Category", "Clients")]
+    [Trait("Category", "ToolkitImport")]
+    [Trait("Severity", "Critical")]
+    public void ImportarDoToolkit_DeParaInteligente_MultiplasBasesEBasesAvulsas()
+    {
+        Log("=== Iniciando teste: ImportarDoToolkit_DeParaInteligente_MultiplasBasesEBasesAvulsas ===");
+        string mockDir = Path.Combine(Path.GetTempPath(), "RM_Toolkit_Mock_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(mockDir);
+        _mockToolkitDir = mockDir;
+        Environment.SetEnvironmentVariable("TOOLKIT_DATA_DIR", mockDir);
+
+        string mockProfilesJson = """
+        {
+          "CLIENTE_MATRIZ": {
+            "autoLogin": true,
+            "delBroker": true,
+            "verboseLogs": true,
+            "apagarHost": false,
+            "profileName": "CLIENTE_MATRIZ",
+            "alias": "MATRIZ_PROD",
+            "rmVersion": "12.1.2602"
+          },
+          "UNIDADE_SUL": {
+            "autoLogin": false,
+            "delBroker": false,
+            "verboseLogs": false,
+            "apagarHost": false,
+            "profileName": "UNIDADE_SUL",
+            "alias": "SUL_PRODUCAO",
+            "rmVersion": "12.1.2502"
+          }
+        }
+        """;
+
+        string mockAliasesJson = """
+        [
+          {
+            "id": "1",
+            "name": "MATRIZ_PROD",
+            "rmUser": "mestre",
+            "rmPass": "totvs",
+            "dbType": "sql",
+            "server": "10.0.0.10,1433",
+            "base": "CORPORE_MATRIZ_PRD",
+            "dbUser": "sa",
+            "dbPass": "sql123",
+            "runService": true,
+            "jobProcessing": true,
+            "localOnly": false,
+            "processPool": true,
+            "maxThreads": 8,
+            "dbVersion": "12.1.2602"
+          },
+          {
+            "id": "2",
+            "name": "MATRIZ_HOMOLOG",
+            "rmUser": "mestre",
+            "rmPass": "totvs",
+            "dbType": "sql",
+            "server": "10.0.0.11,1433",
+            "base": "CORPORE_MATRIZ_HMG",
+            "dbUser": "rm",
+            "dbPass": "rm123",
+            "runService": true,
+            "jobProcessing": false,
+            "localOnly": false,
+            "processPool": false,
+            "maxThreads": 0
+          },
+          {
+            "id": "3",
+            "name": "SUL_PRODUCAO",
+            "rmUser": "mestre",
+            "rmPass": "totvs",
+            "dbType": "oracle",
+            "server": "192.168.1.50:1521/XE",
+            "base": "CORPORE_SUL_PRD",
+            "dbUser": "RM",
+            "dbPass": "oracle123",
+            "runService": true,
+            "jobProcessing": false,
+            "localOnly": false,
+            "processPool": false,
+            "maxThreads": 0,
+            "dbVersion": "12.1.2502"
+          },
+          {
+            "id": "4",
+            "name": "SUL_TESTE",
+            "rmUser": "mestre",
+            "rmPass": "totvs",
+            "dbType": "oracle",
+            "server": "192.168.1.51:1521/XE",
+            "base": "CORPORE_SUL_TST",
+            "dbUser": "RM",
+            "dbPass": "oracle123",
+            "runService": true,
+            "jobProcessing": false,
+            "localOnly": false,
+            "processPool": false,
+            "maxThreads": 0
+          },
+          {
+            "id": "5",
+            "name": "ACME_PROD",
+            "rmUser": "mestre",
+            "rmPass": "totvs",
+            "dbType": "sql",
+            "server": "172.16.0.5,1433",
+            "base": "ACME_PRD",
+            "dbUser": "rm",
+            "dbPass": "rm_acme",
+            "runService": true,
+            "jobProcessing": false,
+            "localOnly": false,
+            "processPool": false,
+            "maxThreads": 0,
+            "dbVersion": "12.1.2602"
+          },
+          {
+            "id": "6",
+            "name": "ACME_HOMOLOG",
+            "rmUser": "mestre",
+            "rmPass": "totvs",
+            "dbType": "sql",
+            "server": "172.16.0.6,1433",
+            "base": "ACME_HMG",
+            "dbUser": "rm",
+            "dbPass": "rm_acme",
+            "runService": true,
+            "jobProcessing": false,
+            "localOnly": false,
+            "processPool": false,
+            "maxThreads": 0
+          }
+        ]
+        """;
+
+        File.WriteAllText(Path.Combine(mockDir, "profiles.json"), mockProfilesJson);
+        File.WriteAllText(Path.Combine(mockDir, "aliases.json"), mockAliasesJson);
+
+        using var s = AppSession.Launch();
+
+        UiOps.OpenAliasManager(s);
+        UiOps.ClickButton(s, AutomationIds.BtnImportarToolkitHeader);
+        UiOps.DismissModalIfPresent(s);
+        UiOps.ClickButton(s, AutomationIds.BtnVoltarCliente);
+
+        var perfis = UiOps.GetComboBoxItems(s, AutomationIds.CbPerfis);
+        Log($"Perfis criados: {string.Join(", ", perfis)}");
+        Assert.Contains("CLIENTE_MATRIZ", perfis);
+        Assert.Contains("UNIDADE_SUL", perfis);
+        Assert.Contains("ACME", perfis);
+
+        // Valida que MATRIZ_HOMOLOG foi associado a CLIENTE_MATRIZ e não jogado no primeiro perfil
+        UiOps.SelectComboBoxItem(s, AutomationIds.CbPerfis, "CLIENTE_MATRIZ");
+        UiOps.OpenAliasManager(s);
+        var basesMatriz = UiOps.GetListBoxItems(s, AutomationIds.LstBases);
+        Log($"Bases de CLIENTE_MATRIZ: {string.Join(", ", basesMatriz)}");
+        Assert.Contains("MATRIZ_PROD", basesMatriz);
+        Assert.Contains("MATRIZ_HOMOLOG", basesMatriz);
+
+        // Valida que SUL_TESTE foi associado a UNIDADE_SUL
+        UiOps.ClickButton(s, AutomationIds.BtnVoltarCliente);
+        UiOps.SelectComboBoxItem(s, AutomationIds.CbPerfis, "UNIDADE_SUL");
+        UiOps.OpenAliasManager(s);
+        var basesSul = UiOps.GetListBoxItems(s, AutomationIds.LstBases);
+        Log($"Bases de UNIDADE_SUL: {string.Join(", ", basesSul)}");
+        Assert.Contains("SUL_PRODUCAO", basesSul);
+        Assert.Contains("SUL_TESTE", basesSul);
+
+        // Valida que ACME_PROD e ACME_HOMOLOG foram agrupados em ACME
+        UiOps.ClickButton(s, AutomationIds.BtnVoltarCliente);
+        UiOps.SelectComboBoxItem(s, AutomationIds.CbPerfis, "ACME");
+        UiOps.OpenAliasManager(s);
+        var basesAcme = UiOps.GetListBoxItems(s, AutomationIds.LstBases);
+        Log($"Bases de ACME: {string.Join(", ", basesAcme)}");
+        Assert.Contains("ACME_PROD", basesAcme);
+        Assert.Contains("ACME_HOMOLOG", basesAcme);
+
+        Log("=== Teste DeParaInteligente concluído com SUCESSO ===");
+    }
 }

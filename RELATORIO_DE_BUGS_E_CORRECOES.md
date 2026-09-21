@@ -51,6 +51,7 @@ Todos os **35 bugs e inconsistências técnicas** mapeados nas áreas de interfa
 * **[BUG-17]** Exclusão de cliente não expurgava as bases associadas da memória antes de persistir, permitindo ressurgimento.
 * **[BUG-18]** `SaveAppSettings` gravando dicionários com chaves nulas quando uma base era criada sem ID inicial.
 * **[BUG-19]** Falha de concorrência no SQLite ao salvar simultaneamente perfis e histórico de logs.
+* **[BUG-36]** Desaparecimento de novos clientes/bases ao reiniciar devido à ausência de migração automática de colunas no SQLite (`EnsureCreated` do EF Core) e falso sucesso na UI.
 
 ### Grupo 4: Execução de Processos & AutoLogin
 * **[BUG-20]** `WaitForAuthenticationAsync` travando indefinidamente se `RM.HostCheck.exe` não estivesse presente na pasta `tools`.
@@ -385,6 +386,18 @@ Todos os **35 bugs e inconsistências técnicas** mapeados nas áreas de interfa
 * **Causa Raiz:** Falta de sanitização permitindo a gravação de `<add key="JobServerMaxThreads" value="-1" />`.
 * **Impacto:** Exceção no runtime do TOTVS RM ao instanciar o thread pool de jobs.
 * **Status:** ✅ **Corrigido**
+
+---
+
+### 🔴 BUG-36: Clientes e bases não salvando no SQLite e desaparecendo após fechar o app
+* **Módulo:** `AppDbContext.cs`, `MainWindow.xaml.cs` ➔ `SaveProfiles()`, `SaveAliases()`, `btnSalvarPerfil_Click()`
+* **Severidade:** 🔴 Crítico
+* **Causa Raiz:** 
+  1. `Database.EnsureCreated()` do EF Core não atualiza o schema de arquivos SQLite já existentes (`rmcore.db`). Colunas e tabelas introduzidas posteriormente (`DelBroker`, `VerboseLogs`, `ApagarHost`, `DbUser`, `DbPass`) disparavam `DbUpdateException` na inserção.
+  2. Relacionamentos 1:1 e 1:N com propriedades de navegação não nulas forçavam validações estritas no EF Core 9 durante inserções parciais por chave estrangeira.
+  3. `SaveProfiles` e `SaveAliases` capturavam o erro silenciosamente imprimindo apenas `ex.Message` genérico sem re-lançar e sem expor `ex.InnerException`. A UI reportava falso sucesso ao usuário mantendo os dados apenas na memória volátil.
+* **Impacto:** Novos clientes ou bases adicionados desapareciam completamente após encerrar o aplicativo.
+* **Status:** ✅ **Corrigido** (Implementado `AppDbContext.EnsureDatabaseMigrated()` com inspeção de `PRAGMA table_info` e migração transparente sem perda de dados, relaxamento de navegações com `IsRequired(false)` e validação de sucesso com aviso na interface).
 
 ---
 

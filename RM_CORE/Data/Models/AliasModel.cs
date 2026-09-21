@@ -6,7 +6,7 @@ namespace RM_Core.Data.Models
     {
         public int Id { get; set; }
         public int AmbienteId { get; set; }
-        public Ambiente Ambiente { get; set; } = null!;
+        public Ambiente? Ambiente { get; set; }
         public string Nome { get; set; } = string.Empty;         // Nome para exibição
         public string Usuario { get; set; } = string.Empty;      // RM user
         public string Senha { get; set; } = string.Empty;        // RM pass

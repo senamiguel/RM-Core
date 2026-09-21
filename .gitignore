@@ -74,6 +74,7 @@ TestResults/
 *.trx
 *.coverage
 ui_test_steps.log
+MockEnvironment/
 
 RM Core/bin/
 RM Core/obj/

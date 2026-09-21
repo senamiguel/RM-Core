@@ -25,7 +25,7 @@ namespace RM_Core
     {
         private System.Collections.ObjectModel.ObservableCollection<LogEntry> logs = new System.Collections.ObjectModel.ObservableCollection<LogEntry>();
 
-        private System.Collections.Generic.Dictionary<string, ProfileSettings> profiles = new System.Collections.Generic.Dictionary<string, ProfileSettings>();
+        private System.Collections.Generic.Dictionary<string, ProfileSettings> profiles = new System.Collections.Generic.Dictionary<string, ProfileSettings>(StringComparer.OrdinalIgnoreCase);
         private string profilesFilePath = System.IO.Path.Combine(GetAppDataDir(), "profiles.json");
         private string aliasesFilePath = System.IO.Path.Combine(GetAppDataDir(), "aliases.json");
         private System.Collections.ObjectModel.ObservableCollection<AliasConfig> aliases = new System.Collections.ObjectModel.ObservableCollection<AliasConfig>();
@@ -102,6 +102,7 @@ namespace RM_Core
                 listLogs.ItemsSource = logs;
                 logs.CollectionChanged += Logs_CollectionChanged;
                 LoadAppSettings();
+                AppDbContext.EnsureDatabaseMigrated();
                 InitializeSelectors();
                 LoadAliases();
                 InitializeBasesTab();
@@ -140,6 +141,9 @@ namespace RM_Core
             {
                 _isSyncing = false;
             }
+
+            ApplyDefaultOrLast();
+            UpdateFilteredAliasesList();
         }
 
         private void InitializeSelectors()
@@ -194,6 +198,7 @@ namespace RM_Core
 
         private void LoadAliases()
         {
+            bool loadSuccess = false;
             try
             {
                 using (var db = new AppDbContext())
@@ -225,19 +230,21 @@ namespace RM_Core
                             dbVersion = dbAl.Sgbd
                         });
                     }
+                    loadSuccess = true;
                 }
             }
             catch (Exception ex)
             {
-                AddLog("error", $"Erro ao carregar aliases: {ex.Message}");
+                string msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                AddLog("error", $"Erro ao carregar aliases: {msg}");
             }
 
-            // Fallback mock aliases if empty
-            if (aliases.Count == 0)
+            // Fallback mock aliases if empty and wizard hasn't run yet
+            if (loadSuccess && aliases.Count == 0 && !_appSettings.FirstRunComplete)
             {
                 aliases.Add(new AliasConfig 
                 { 
-                    id = "1782763422741", 
+                    id = "1", 
                     name = "Desenvolvimento", 
                     Base = "CorporeRM", 
                     client = "Cliente Padrão",
@@ -251,7 +258,7 @@ namespace RM_Core
                 });
                 aliases.Add(new AliasConfig 
                 { 
-                    id = "1782763422742", 
+                    id = "2", 
                     name = "Produção", 
                     Base = "CorporeRM", 
                     client = "Cliente Padrão",
@@ -265,7 +272,7 @@ namespace RM_Core
                 });
                 aliases.Add(new AliasConfig 
                 { 
-                    id = "1782763422743", 
+                    id = "3", 
                     name = "Homologação", 
                     Base = "CorporeRM", 
                     client = "Desenvolvimento Local",
@@ -281,14 +288,13 @@ namespace RM_Core
             }
         }
 
-        private void SaveAliases()
+        private bool SaveAliases()
         {
             try
             {
+                AppDbContext.EnsureDatabaseMigrated();
                 using (var db = new AppDbContext())
                 {
-                    db.Database.EnsureCreated();
-                    
                     var dbAliases = db.Aliases.ToList();
                     var dbAmbientes = db.Ambientes.ToList();
                     
@@ -306,8 +312,8 @@ namespace RM_Core
                     // Add/update aliases
                     foreach (var alias in aliases)
                     {
-                        // find associated Ambiente by name
-                        var amb = dbAmbientes.FirstOrDefault(a => a.Nome == alias.client);
+                        // find associated Ambiente by name (case-insensitive)
+                        var amb = dbAmbientes.FirstOrDefault(a => a.Nome.Equals(alias.client, StringComparison.OrdinalIgnoreCase));
                         if (amb == null)
                         {
                             amb = new Ambiente
@@ -321,14 +327,26 @@ namespace RM_Core
                             db.SaveChanges(); // get Id
                             dbAmbientes.Add(amb);
                         }
+
+                        // Ensure profiles dictionary also knows about this Ambiente
+                        if (!profiles.ContainsKey(amb.Nome))
+                        {
+                            profiles[amb.Nome] = new ProfileSettings
+                            {
+                                Name = amb.Nome,
+                                RmVersion = amb.RmVersion ?? "12.1.2602",
+                                Alias = alias.name,
+                                AutoLogin = amb.AutoLogin
+                            };
+                        }
                         
                         int aliasId = 0;
-                        if (int.TryParse(alias.id, out int parsedId) && parsedId > 0)
+                        if (int.TryParse(alias.id, out int parsedId) && parsedId > 0 && parsedId < 1000000000)
                         {
                             aliasId = parsedId;
                         }
                         
-                        var existing = (aliasId > 0 ? dbAliases.FirstOrDefault(a => a.Id == aliasId) : null)
+                        var existing = (aliasId > 0 ? dbAliases.FirstOrDefault(a => a.Id == aliasId && a.AmbienteId == amb.Id) : null)
                                        ?? dbAliases.FirstOrDefault(a => a.Nome.Equals(alias.name, StringComparison.OrdinalIgnoreCase) && a.AmbienteId == amb.Id);
 
                         if (existing != null)
@@ -377,14 +395,18 @@ namespace RM_Core
                             db.Aliases.Add(newAlias);
                             db.SaveChanges();
                             alias.id = newAlias.Id.ToString();
+                            dbAliases.Add(newAlias);
                         }
                     }
                     db.SaveChanges();
+                    return true;
                 }
             }
             catch (Exception ex)
             {
-                AddLog("error", $"Erro ao salvar aliases: {ex.Message}");
+                string msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                AddLog("error", $"Erro ao salvar aliases: {msg}");
+                return false;
             }
         }
 
@@ -486,7 +508,8 @@ namespace RM_Core
             }
             catch (Exception ex)
             {
-                AddLog("error", $"Erro ao carregar clientes: {ex.Message}");
+                string msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                AddLog("error", $"Erro ao carregar clientes: {msg}");
             }
             
             UpdateFilteredAliasesList();
@@ -530,21 +553,20 @@ namespace RM_Core
             ApplyDefaultOrLast();
         }
 
-        private void SaveProfiles(string? oldName = null, string? newName = null)
+        private bool SaveProfiles(string? oldName = null, string? newName = null)
         {
             try
             {
+                AppDbContext.EnsureDatabaseMigrated();
                 using (var db = new AppDbContext())
                 {
-                    db.Database.EnsureCreated();
-                    
                     var dbAmbientes = db.Ambientes.ToList();
                     var dbConfigs = db.AmbienteConfigs.ToList();
                     
                     // If renaming, update the old entity name first so it doesn't get deleted
-                    if (!string.IsNullOrEmpty(oldName) && !string.IsNullOrEmpty(newName) && oldName != newName)
+                    if (!string.IsNullOrEmpty(oldName) && !string.IsNullOrEmpty(newName) && !oldName.Equals(newName, StringComparison.OrdinalIgnoreCase))
                     {
-                        var targetAmb = dbAmbientes.FirstOrDefault(a => a.Nome == oldName);
+                        var targetAmb = dbAmbientes.FirstOrDefault(a => a.Nome.Equals(oldName, StringComparison.OrdinalIgnoreCase));
                         if (targetAmb != null)
                         {
                             targetAmb.Nome = newName;
@@ -552,26 +574,20 @@ namespace RM_Core
                         }
                     }
 
-                    // Delete environments in db that are no longer in 'profiles'
-                    foreach (var dbAmb in dbAmbientes)
-                    {
-                        if (!profiles.ContainsKey(dbAmb.Nome))
-                        {
-                            db.Ambientes.Remove(dbAmb);
-                        }
-                    }
+                    // NOTE: Environments and their cascaded aliases are only removed on explicit user deletion (btnDeletarPerfil_Click).
                     
                     // Add/update environments
                     foreach (var pair in profiles)
                     {
                         var profile = pair.Value;
-                        var existing = dbAmbientes.FirstOrDefault(a => a.Nome == profile.Name);
+                        var existing = dbAmbientes.FirstOrDefault(a => a.Nome.Equals(profile.Name, StringComparison.OrdinalIgnoreCase));
                         if (existing != null)
                         {
                             existing.RmVersion = profile.RmVersion;
                             existing.AutoLogin = profile.AutoLogin;
                             
-                            var cfg = dbConfigs.FirstOrDefault(c => c.AmbienteId == existing.Id);
+                            var cfg = dbConfigs.FirstOrDefault(c => c.AmbienteId == existing.Id)
+                                      ?? db.AmbienteConfigs.FirstOrDefault(c => c.AmbienteId == existing.Id);
                             if (cfg != null)
                             {
                                 cfg.DefaultDB = profile.Alias;
@@ -585,7 +601,7 @@ namespace RM_Core
                             }
                             else
                             {
-                                db.AmbienteConfigs.Add(new AmbienteConfig
+                                var newCfg = new AmbienteConfig
                                 {
                                     AmbienteId = existing.Id,
                                     DefaultDB = profile.Alias,
@@ -596,7 +612,9 @@ namespace RM_Core
                                     EnableProcessIsolation = profile.EnableProcessIsolation,
                                     JobServer3Camadas = profile.JobServer3Camadas,
                                     EnableCompression = profile.EnableCompression
-                                });
+                                };
+                                db.AmbienteConfigs.Add(newCfg);
+                                dbConfigs.Add(newCfg);
                             }
                         }
                         else
@@ -611,8 +629,9 @@ namespace RM_Core
                             };
                             db.Ambientes.Add(newAmb);
                             db.SaveChanges(); // to get newAmb.Id
+                            dbAmbientes.Add(newAmb);
                             
-                            db.AmbienteConfigs.Add(new AmbienteConfig
+                            var newCfg = new AmbienteConfig
                             {
                                 AmbienteId = newAmb.Id,
                                 DefaultDB = profile.Alias,
@@ -623,16 +642,21 @@ namespace RM_Core
                                 EnableProcessIsolation = profile.EnableProcessIsolation,
                                 JobServer3Camadas = profile.JobServer3Camadas,
                                 EnableCompression = profile.EnableCompression
-                            });
+                            };
+                            db.AmbienteConfigs.Add(newCfg);
+                            dbConfigs.Add(newCfg);
                         }
                     }
                     
                     db.SaveChanges();
+                    return true;
                 }
             }
             catch (Exception ex)
             {
-                AddLog("error", $"Erro ao salvar perfis: {ex.Message}");
+                string msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                AddLog("error", $"Erro ao salvar perfis: {msg}");
+                return false;
             }
         }
 
@@ -992,8 +1016,14 @@ namespace RM_Core
             profiles[name] = profile;
             _appSettings.LastClient = name;
             SaveAppSettings();
-            SaveProfiles(oldName: isRenaming ? oldName : null, newName: isRenaming ? name : null);
-            SaveAliases();
+            bool profilesSaved = SaveProfiles(oldName: isRenaming ? oldName : null, newName: isRenaming ? name : null);
+            bool aliasesSaved = SaveAliases();
+
+            if (!profilesSaved || !aliasesSaved)
+            {
+                MessageBox.Show($"Ocorreu um erro ao persistir as alterações do cliente \"{name}\" no banco de dados. Verifique a aba de logs para mais detalhes.", "Erro ao Salvar", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
             _isCreatingNewClient = false;
             _editingClientOriginalName = name;
@@ -1081,6 +1111,25 @@ namespace RM_Core
             if (result == MessageBoxResult.No) return;
 
             profiles.Remove(selectedName);
+
+            try
+            {
+                using (var db = new AppDbContext())
+                {
+                    var targetAmb = db.Ambientes.FirstOrDefault(a => a.Nome.Equals(selectedName, StringComparison.OrdinalIgnoreCase));
+                    if (targetAmb != null)
+                    {
+                        db.Ambientes.Remove(targetAmb);
+                        db.SaveChanges();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                string msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                AddLog("error", $"Erro ao excluir cliente do banco: {msg}");
+            }
+
             SaveProfiles();
 
             // Clean up in-memory aliases so SaveAliases doesn't recreate this client
@@ -3437,6 +3486,10 @@ namespace RM_Core
             }
             txtSearchBase.Text = string.Empty;
             UpdateFilteredAliasesList();
+            if (filteredAliases.Count > 0)
+            {
+                lstBases.SelectedItem = filteredAliases.First();
+            }
             gridClientSettingsForm.Visibility = Visibility.Collapsed;
             gridAliasManagerForm.Visibility = Visibility.Visible;
         }
@@ -3445,6 +3498,12 @@ namespace RM_Core
         {
             gridAliasManagerForm.Visibility = Visibility.Collapsed;
             gridClientSettingsForm.Visibility = Visibility.Visible;
+
+            string active = cbPerfis.SelectedItem?.ToString() ?? cbClienteAtivo.SelectedItem?.ToString() ?? string.Empty;
+            if (!string.IsNullOrEmpty(active) && profiles.TryGetValue(active, out var prof))
+            {
+                LoadProfileToUI(prof);
+            }
         }
 
         private void InitializeBasesTab()
@@ -4003,9 +4062,16 @@ namespace RM_Core
             };
 
             aliases.Add(newAlias);
-            SaveAliases();
+            bool aOk = SaveAliases();
+            if (!aOk)
+            {
+                MessageBox.Show("Ocorreu um erro ao persistir a nova base no banco de dados. Verifique a aba de logs para mais detalhes.", "Erro ao Salvar", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
             UpdateFilteredAliasesList();
             lstBases.SelectedItem = newAlias;
+            stackDetailsEditor.Visibility = Visibility.Visible;
+            borderActionBar.Visibility = Visibility.Visible;
 
             string clientForUI = cbPerfis.SelectedItem?.ToString() ?? cbClienteAtivo.SelectedItem?.ToString() ?? string.Empty;
             if (!string.IsNullOrEmpty(clientForUI))
@@ -4067,7 +4133,12 @@ namespace RM_Core
                 }
                 selectedAlias.maxThreads = maxThreads;
 
-                SaveAliases();
+                bool aOk = SaveAliases();
+                if (!aOk)
+                {
+                    MessageBox.Show($"Ocorreu um erro ao persistir a base \"{name}\" no banco de dados. Verifique a aba de logs para mais detalhes.", "Erro ao Salvar", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
                 // If renamed, update active profile's alias pointer
                 if (!oldName.Equals(name, StringComparison.OrdinalIgnoreCase))
@@ -4095,11 +4166,11 @@ namespace RM_Core
                     }
                     UpdateAliasesUI(oldClient);
                     UpdateAliasesUI(newClient);
+
+                    cbPerfis.SelectedItem = newClient;
+                    cbClienteAtivo.SelectedItem = newClient;
                 }
                 
-                // Refresh list display
-                lstBases.Items.Refresh();
-
                 string clientToUpdate = cbClienteAtivo.SelectedItem?.ToString() ?? cbPerfis.SelectedItem?.ToString() ?? newClient;
                 if (!string.IsNullOrEmpty(clientToUpdate))
                 {
@@ -4108,7 +4179,22 @@ namespace RM_Core
 
                 UpdateFilteredAliasesList();
 
-                AddLog("info", $"Alias \"{name}\" atualizado com sucesso.");
+                // Re-select the saved alias so the editor stays open and visible
+                var matchInList = filteredAliases.FirstOrDefault(a => a.id == selectedAlias.id || (a.name.Equals(selectedAlias.name, StringComparison.OrdinalIgnoreCase) && a.client.Equals(selectedAlias.client, StringComparison.OrdinalIgnoreCase)));
+                if (matchInList != null)
+                {
+                    lstBases.SelectedItem = matchInList;
+                }
+                else if (filteredAliases.Count > 0)
+                {
+                    lstBases.SelectedItem = filteredAliases.First();
+                }
+
+                stackDetailsEditor.Visibility = Visibility.Visible;
+                borderActionBar.Visibility = Visibility.Visible;
+                lstBases.Items.Refresh();
+
+                AddLog("info", $"Base \"{name}\" salva com sucesso.");
             }
         }
 
@@ -4152,9 +4238,16 @@ namespace RM_Core
                     TagColor = selectedAlias.TagColor
                 };
                 aliases.Add(newAlias);
-                SaveAliases();
+                bool aOk = SaveAliases();
+                if (!aOk)
+                {
+                    MessageBox.Show("Ocorreu um erro ao duplicar a base no banco de dados. Verifique a aba de logs para mais detalhes.", "Erro ao Salvar", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
                 UpdateFilteredAliasesList();
                 lstBases.SelectedItem = newAlias;
+                stackDetailsEditor.Visibility = Visibility.Visible;
+                borderActionBar.Visibility = Visibility.Visible;
 
                 if (cbClienteAtivo.SelectedItem != null)
                     UpdateAliasesUI(cbClienteAtivo.SelectedItem.ToString()!, preselectedBaseName: newAlias.name);
@@ -4265,7 +4358,12 @@ namespace RM_Core
                 string baseId = selectedAlias.id;
 
                 aliases.Remove(selectedAlias);
-                SaveAliases();
+                bool aOk = SaveAliases();
+                if (!aOk)
+                {
+                    MessageBox.Show("Ocorreu um erro ao excluir a base no banco de dados. Verifique a aba de logs para mais detalhes.", "Erro ao Excluir", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
                 if (_appSettings.DefaultBaseId == baseId) _appSettings.DefaultBaseId = string.Empty;
                 if (_appSettings.LastBaseId == baseId) _appSettings.LastBaseId = string.Empty;
@@ -4386,6 +4484,123 @@ namespace RM_Core
             btnImportarOutrosApps_Click(sender, e);
         }
 
+        private static readonly string[] SuffixesToStripFromAlias = new[]
+        {
+            "_PRODUCAO", "_PRODUÇÃO", "_PROD", "_PRD",
+            "_HOMOLOGACAO", "_HOMOLOGAÇÃO", "_HOMOLOG", "_HOM", "_HMG",
+            "_TREINAMENTO", "_TREIN", "_TRN",
+            "_DESENVOLVIMENTO", "_DESENV", "_DEV",
+            "_TESTE", "_TST", "_QA",
+            "_BACKUP", "_BKP",
+            "_OFICIAL", "_OFIC",
+            "_LOCAL", "_REMOTO", "_CLOUD",
+            "_NOVO", "_OLD", "_ANTIGO",
+            "-PRODUCAO", "-PRODUÇÃO", "-PROD", "-PRD",
+            "-HOMOLOGACAO", "-HOMOLOGAÇÃO", "-HOMOLOG", "-HOM", "-HMG",
+            "-TREINAMENTO", "-TREIN", "-TRN",
+            "-DESENVOLVIMENTO", "-DESENV", "-DEV",
+            "-TESTE", "-TST", "-QA",
+            "-BACKUP", "-BKP",
+            "-OFICIAL", "-OFIC",
+            "-LOCAL", "-REMOTO", "-CLOUD",
+            "-NOVO", "-OLD", "-ANTIGO"
+        };
+
+        private static string ExtractToolkitStem(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return "";
+            string s = name.Trim();
+            foreach (var suf in SuffixesToStripFromAlias)
+            {
+                if (s.EndsWith(suf, StringComparison.OrdinalIgnoreCase))
+                {
+                    s = s.Substring(0, s.Length - suf.Length).TrimEnd('_', '-', ' ');
+                    break;
+                }
+            }
+
+            string[] prefixes = { "ALIAS_", "BASE_", "DB_", "RM_", "ALIAS-", "BASE-", "DB-", "RM-" };
+            foreach (var pref in prefixes)
+            {
+                if (s.StartsWith(pref, StringComparison.OrdinalIgnoreCase) && s.Length > pref.Length + 2)
+                {
+                    s = s.Substring(pref.Length).TrimStart('_', '-', ' ');
+                    break;
+                }
+            }
+
+            return s;
+        }
+
+        private static string ResolveClientForImportedAlias(string aliasName, string? rawClient, Dictionary<string, ProfileSettings> targetProfiles)
+        {
+            if (!string.IsNullOrWhiteSpace(rawClient))
+            {
+                return rawClient.Trim();
+            }
+
+            string aliasStem = ExtractToolkitStem(aliasName);
+
+            if (targetProfiles.Count == 0)
+            {
+                return !string.IsNullOrWhiteSpace(aliasStem) && aliasStem.Length >= 2 ? aliasStem : aliasName;
+            }
+
+            // 1. Correspondência exata com o Alias configurado no Perfil
+            var exactAliasMatch = targetProfiles.Values.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.Alias) && p.Alias.Equals(aliasName, StringComparison.OrdinalIgnoreCase));
+            if (exactAliasMatch != null)
+            {
+                return exactAliasMatch.Name;
+            }
+
+            // 2. Correspondência exata com o Nome do Perfil
+            var exactNameMatch = targetProfiles.Values.FirstOrDefault(p => p.Name.Equals(aliasName, StringComparison.OrdinalIgnoreCase));
+            if (exactNameMatch != null)
+            {
+                return exactNameMatch.Name;
+            }
+
+            // 3. Correspondência do radical do alias com o Nome do Perfil
+            if (!string.IsNullOrWhiteSpace(aliasStem))
+            {
+                var stemNameMatch = targetProfiles.Values.FirstOrDefault(p => p.Name.Equals(aliasStem, StringComparison.OrdinalIgnoreCase));
+                if (stemNameMatch != null)
+                {
+                    return stemNameMatch.Name;
+                }
+
+                // 4. Correspondência do radical do alias com o radical do Alias do Perfil
+                var stemAliasMatch = targetProfiles.Values.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.Alias) && ExtractToolkitStem(p.Alias).Equals(aliasStem, StringComparison.OrdinalIgnoreCase));
+                if (stemAliasMatch != null)
+                {
+                    return stemAliasMatch.Name;
+                }
+            }
+
+            // 5. Prefix match: aliasName começa com o nome do perfil + delimitador
+            var prefixMatch = targetProfiles.Values.FirstOrDefault(p =>
+                aliasName.StartsWith(p.Name + "_", StringComparison.OrdinalIgnoreCase) ||
+                aliasName.StartsWith(p.Name + "-", StringComparison.OrdinalIgnoreCase) ||
+                aliasName.StartsWith(p.Name + " ", StringComparison.OrdinalIgnoreCase));
+            if (prefixMatch != null)
+            {
+                return prefixMatch.Name;
+            }
+
+            // 6. Token matching: se o nome do perfil for um dos tokens do alias (ex: "Sesc" em "Alias_Sesc_Folha")
+            var aliasTokens = aliasName.Split(new[] { '_', '-', ' ', '.', '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var tokenMatch = targetProfiles.Values.FirstOrDefault(p =>
+                p.Name.Length >= 3 &&
+                aliasTokens.Any(t => string.Equals(t, p.Name, StringComparison.OrdinalIgnoreCase)));
+            if (tokenMatch != null)
+            {
+                return tokenMatch.Name;
+            }
+
+            // 7. Não joga em profile aleatório! Usa o radical ou o próprio alias como nome de um novo Cliente
+            return !string.IsNullOrWhiteSpace(aliasStem) && aliasStem.Length >= 2 ? aliasStem : aliasName;
+        }
+
         public void ImportarDoToolkit(string? specificPath = null)
         {
             var candidateDirs = new List<string>();
@@ -4478,6 +4693,7 @@ namespace RM_Core
                         string rmVer = elem.TryGetProperty("rmVersion", out var v) ? v.GetString() ?? "12.1.2602" : "12.1.2602";
                         string aliasRef = elem.TryGetProperty("alias", out var a) ? a.GetString() ?? "" : "";
                         bool autoLogin = elem.TryGetProperty("autoLogin", out var al) && al.GetBoolean();
+                        bool delBroker = elem.TryGetProperty("delBroker", out var dbk) && dbk.GetBoolean();
                         bool verbose = elem.TryGetProperty("verboseLogs", out var vl) && vl.GetBoolean();
                         bool apagarHost = elem.TryGetProperty("apagarHost", out var ah) && ah.GetBoolean();
 
@@ -4487,6 +4703,7 @@ namespace RM_Core
                             RmVersion = rmVer,
                             Alias = aliasRef,
                             AutoLogin = autoLogin,
+                            DelBroker = delBroker,
                             VerboseLogs = verbose,
                             ApagarHost = apagarHost
                         };
@@ -4512,7 +4729,6 @@ namespace RM_Core
                     {
                         foreach (var elem in doc.RootElement.EnumerateArray())
                         {
-                            string id = elem.TryGetProperty("id", out var idProp) ? idProp.GetString() ?? DateTime.Now.Ticks.ToString() : DateTime.Now.Ticks.ToString();
                             string name = elem.TryGetProperty("name", out var nProp) ? nProp.GetString() ?? "Base Importada" : "Base Importada";
                             string baseName = elem.TryGetProperty("base", out var bProp) ? bProp.GetString() ?? "CorporeRM" : (elem.TryGetProperty("Base", out var bProp2) ? bProp2.GetString() ?? "CorporeRM" : "CorporeRM");
                             if (string.IsNullOrWhiteSpace(baseName)) baseName = "CorporeRM";
@@ -4528,33 +4744,14 @@ namespace RM_Core
                             bool localOnly = elem.TryGetProperty("localOnly", out var loProp) && loProp.GetBoolean();
                             bool processPool = elem.TryGetProperty("processPool", out var ppProp) && ppProp.GetBoolean();
                             int maxThreads = elem.TryGetProperty("maxThreads", out var mtProp) ? mtProp.GetInt32() : 0;
-                            string dbVersion = elem.TryGetProperty("dbVersion", out var dvProp) ? dvProp.GetString() ?? "12.1.2602" : "12.1.2602";
 
-                            string associatedClient = "Cliente Padrão";
-                            if (elem.TryGetProperty("client", out var cProp) && !string.IsNullOrWhiteSpace(cProp.GetString()))
-                            {
-                                associatedClient = cProp.GetString()!;
-                            }
-                            else
-                            {
-                                var matchingProfile = profiles.Values.FirstOrDefault(p => p.Alias.Equals(name, StringComparison.OrdinalIgnoreCase));
-                                if (matchingProfile != null)
-                                {
-                                    associatedClient = matchingProfile.Name;
-                                }
-                                else if (profiles.Count > 0)
-                                {
-                                    var fuzzyProf = profiles.Values.FirstOrDefault(p => name.IndexOf(p.Name, StringComparison.OrdinalIgnoreCase) >= 0 || p.Name.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0);
-                                    if (fuzzyProf != null)
-                                    {
-                                        associatedClient = fuzzyProf.Name;
-                                    }
-                                    else
-                                    {
-                                        associatedClient = profiles.Keys.First();
-                                    }
-                                }
-                            }
+                            string rawClient = elem.TryGetProperty("client", out var cProp) ? cProp.GetString() : null;
+                            string associatedClient = ResolveClientForImportedAlias(name, rawClient, profiles);
+
+                            string rawDbVersion = elem.TryGetProperty("dbVersion", out var dvProp) ? (dvProp.GetString() ?? "") : "";
+                            string dbVersion = !string.IsNullOrWhiteSpace(rawDbVersion)
+                                ? rawDbVersion
+                                : (profiles.TryGetValue(associatedClient, out var prof) && !string.IsNullOrWhiteSpace(prof.RmVersion) ? prof.RmVersion : "12.1.2602");
 
                             if (!profiles.ContainsKey(associatedClient))
                             {
@@ -4565,9 +4762,14 @@ namespace RM_Core
                                     Alias = name,
                                     AutoLogin = true,
                                     VerboseLogs = true,
+                                    DelBroker = false,
                                     ApagarHost = false
                                 };
                                 importedProfilesCount++;
+                            }
+                            else if (string.IsNullOrWhiteSpace(profiles[associatedClient].Alias) || profiles[associatedClient].Alias == "CorporeRM")
+                            {
+                                profiles[associatedClient].Alias = name;
                             }
 
                             var existingAlias = aliases.FirstOrDefault(a => a.name.Equals(name, StringComparison.OrdinalIgnoreCase) && a.client.Equals(associatedClient, StringComparison.OrdinalIgnoreCase));
@@ -4591,7 +4793,7 @@ namespace RM_Core
                             {
                                 var newAlias = new AliasConfig
                                 {
-                                    id = id,
+                                    id = "", // Safe! Previne colisão com IDs do SQLite
                                     name = name,
                                     client = associatedClient,
                                     Base = baseName,
@@ -4878,7 +5080,7 @@ namespace RM_Core
                             {
                                 aliases.Add(new AliasConfig
                                 {
-                                    id = id,
+                                    id = "",
                                     name = nome,
                                     client = clientName,
                                     Base = baseName,
@@ -5367,11 +5569,11 @@ namespace RM_Core
                     return plusIdx >= 0 ? infoVer.Substring(0, plusIdx) : infoVer;
                 }
                 var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                return ver != null ? $"Alpha-{ver.Major}.{ver.Minor}.{ver.Build}" : "Alpha-0.6.9";
+                return ver != null ? $"Alpha-{ver.Major}.{ver.Minor}.{ver.Build}" : "Alpha-0.6.13";
             }
             catch
             {
-                return "Alpha-0.6.9";
+                return "Alpha-0.6.13";
             }
         }
 

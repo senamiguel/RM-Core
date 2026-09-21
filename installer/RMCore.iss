@@ -11,8 +11,8 @@
 #define MyAppPublisher "Miguel Sena"
 #define MyAppURL "https://github.com/senamiguel/RM-Core"
 #define MyAppExeName "RM_CORE.exe"
-#define MyAppVersion "Alpha-0.6.12"
-#define MyAppNumericVersion "0.6.12.0"
+#define MyAppVersion "Alpha-0.6.13"
+#define MyAppNumericVersion "0.6.13.0"
 
 [Setup]
 AppId={{B6E2A8C1-5D7F-4E3A-9B1C-7F2D8E4A6B5C}
