@@ -146,6 +146,16 @@ namespace RM_Core
             UpdateFilteredAliasesList();
         }
 
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            try
+            {
+                iNKORE.UI.WPF.Modern.Helpers.Styles.BackdropHelper.ApplyDarkMode(this);
+            }
+            catch { }
+        }
+
         private void InitializeSelectors()
         {
             // Populate RM Versions

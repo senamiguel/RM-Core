@@ -13,18 +13,16 @@ set "TITLE=Release Alpha-0.6.13"
 set "NOTES_FILE=%~dp0RELEASE_NOTES_Alpha-0.6.13.md"
 set "INSTALLER=%~dp0installer\dist\RM-Core-Setup-Alpha-0.6.13.exe"
 
+echo [0/5] Compilando Release e gerando instalador atualizado...
+call "%~dp0installer\build-installer.bat"
 if not exist "%INSTALLER%" (
-    echo [AVISO] Instalador nao encontrado em:
+    echo [ERRO] O instalador nao foi gerado em:
     echo %INSTALLER%
-    echo Executando build do instalador primeiro...
-    call "%~dp0installer\build-installer.bat"
-    if not exist "%INSTALLER%" (
-        echo [ERRO] O instalador nao foi gerado. Abortando publicacao.
-        pause
-        exit /b 1
-    )
+    pause
+    exit /b 1
 )
 
+echo.
 echo [1/5] Adicionando alteracoes ao git...
 git add .
 if %ERRORLEVEL% NEQ 0 (
@@ -35,7 +33,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo [2/5] Criando commit assinado com chave GPG...
-git commit -S -m "fix(persistence): resolver persistencia SQLite com auto-migracao e bump para Alpha-0.6.13"
+git commit -S -m "fix(theme,persistence): bloquear tema escuro exclusivo e resolver persistencia SQLite"
 if %ERRORLEVEL% NEQ 0 (
     echo [INFO] Nenhuma alteracao pendente para commit ou commit ja realizado.
 )

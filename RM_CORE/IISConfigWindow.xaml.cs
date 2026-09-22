@@ -31,6 +31,16 @@ namespace RM_Core
             LoadSites();
         }
 
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            try
+            {
+                iNKORE.UI.WPF.Modern.Helpers.Styles.BackdropHelper.ApplyDarkMode(this);
+            }
+            catch { }
+        }
+
         private void LoadSites()
         {
             try

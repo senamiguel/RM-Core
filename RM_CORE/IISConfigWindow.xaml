@@ -6,6 +6,8 @@
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
         ui:WindowHelper.UseModernWindowStyle="True"
         ui:WindowHelper.SystemBackdropType="Mica"
+        ui:ThemeManager.RequestedTheme="Dark"
+        ui:ThemeManager.IsThemeAware="False"
         ui:TitleBar.Height="36"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"

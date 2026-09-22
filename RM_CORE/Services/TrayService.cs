@@ -129,9 +129,32 @@ namespace RM_Core.Services
         // Private helpers
         // ---------------------------------------------------------------
 
+        private class DarkMenuColorTable : ProfessionalColorTable
+        {
+            public override Color ToolStripDropDownBackground => Color.FromArgb(32, 32, 35);
+            public override Color ImageMarginGradientBegin => Color.FromArgb(32, 32, 35);
+            public override Color ImageMarginGradientMiddle => Color.FromArgb(32, 32, 35);
+            public override Color ImageMarginGradientEnd => Color.FromArgb(32, 32, 35);
+            public override Color MenuBorder => Color.FromArgb(60, 60, 65);
+            public override Color MenuItemBorder => Color.FromArgb(0, 120, 212);
+            public override Color MenuItemSelected => Color.FromArgb(48, 48, 54);
+            public override Color MenuStripGradientBegin => Color.FromArgb(32, 32, 35);
+            public override Color MenuStripGradientEnd => Color.FromArgb(32, 32, 35);
+            public override Color MenuItemSelectedGradientBegin => Color.FromArgb(48, 48, 54);
+            public override Color MenuItemSelectedGradientEnd => Color.FromArgb(48, 48, 54);
+            public override Color MenuItemPressedGradientBegin => Color.FromArgb(40, 40, 45);
+            public override Color MenuItemPressedGradientEnd => Color.FromArgb(40, 40, 45);
+            public override Color SeparatorDark => Color.FromArgb(60, 60, 65);
+            public override Color SeparatorLight => Color.FromArgb(45, 45, 50);
+        }
+
         private ContextMenuStrip BuildContextMenu()
         {
-            var menu = new ContextMenuStrip();
+            var menu = new ContextMenuStrip
+            {
+                Renderer = new ToolStripProfessionalRenderer(new DarkMenuColorTable()),
+                ShowImageMargin = false
+            };
 
             // Abrir RM Core
             var itemAbrir = new ToolStripMenuItem("Abrir RM Core");
@@ -177,6 +200,11 @@ namespace RM_Core.Services
             var itemSair = new ToolStripMenuItem("Sair");
             itemSair.Click += OnSair;
             menu.Items.Add(itemSair);
+
+            foreach (ToolStripItem item in menu.Items)
+            {
+                item.ForeColor = Color.White;
+            }
 
             return menu;
         }

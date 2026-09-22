@@ -10,6 +10,8 @@
         
         ui:WindowHelper.UseModernWindowStyle="True"
         ui:WindowHelper.SystemBackdropType="Mica"
+        ui:ThemeManager.RequestedTheme="Dark"
+        ui:ThemeManager.IsThemeAware="False"
         ui:TitleBar.Height="36"
         ui:TitleBar.IsIconVisible="True"
         ResizeMode="CanMinimize"

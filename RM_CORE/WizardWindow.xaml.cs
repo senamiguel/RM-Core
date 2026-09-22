@@ -51,6 +51,16 @@ namespace RM_Core
             ShowPage(0);
         }
 
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            try
+            {
+                iNKORE.UI.WPF.Modern.Helpers.Styles.BackdropHelper.ApplyDarkMode(this);
+            }
+            catch { }
+        }
+
         // ---------------------------------------------------------------
         // Navegação
         // ---------------------------------------------------------------

@@ -12,6 +12,9 @@ namespace RM_Core
         {
             base.OnStartup(e);
 
+            // Forçar tema escuro (Dark Theme) exclusivo em toda a aplicação, ignorando o tema do Windows
+            iNKORE.UI.WPF.Modern.ThemeManager.Current.ApplicationTheme = iNKORE.UI.WPF.Modern.ApplicationTheme.Dark;
+
             AppDomain.CurrentDomain.UnhandledException += (s, args) =>
             {
                 LogCrash("AppDomain.UnhandledException", args.ExceptionObject as Exception);

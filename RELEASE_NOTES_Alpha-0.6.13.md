@@ -15,6 +15,10 @@ Esta versão traz a resolução definitiva para a persistência de clientes e ba
 - **Feedback Imediato na Interface**: As operações de salvar perfis (`SaveProfiles`) e bases (`SaveAliases`) agora validam explicitamente o resultado retornado pelo SQLite em transação. Em caso de falha, um alerta informativo é exibido na interface com a mensagem de causa raiz (`ex.InnerException`), eliminando perda silenciosa de dados.
 - **Rastreamento de Mudanças em Memória**: As entidades recém-adicionadas são registradas ativamente no contexto local do EF Core após cada inserção, prevenindo duplicações de chave primária e inconsistências de estado entre telas.
 
+#### 🌙 Tema Escuro Exclusivo (Dark Theme Only)
+- **Bloqueio Definitivo de Tema Escuro**: A aplicação agora opera 100% em tema escuro fixo, independentemente do tema ativo no Windows (claro ou escuro), eliminando problemas de contraste e ilegibilidade em campos de entrada, comboboxes e menus.
+- **Mica & DWM Immersive Dark**: As barras de título e efeitos de transparência Mica utilizam modo escuro nativo do Windows em todas as janelas.
+
 #### ⚡ Estabilidade & Confiabilidade
 - **Startup Confiável**: A rotina de migração executa de forma automática e transparente no construtor da janela principal antes do carregamento de perfis e conexões.
 - **Relatório de Bugs Atualizado**: Documentado o `BUG-36` em detalhes no [`RELATORIO_DE_BUGS_E_CORRECOES.md`](file:///c:/Users/MIGUEL.SENA/Documents/RM_Core/RELATORIO_DE_BUGS_E_CORRECOES.md).

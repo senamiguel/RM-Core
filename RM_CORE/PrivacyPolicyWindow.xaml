@@ -2,6 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        ui:ThemeManager.RequestedTheme="Dark"
+        ui:ThemeManager.IsThemeAware="False"
         Title="Política de Privacidade — RM Core"
         Height="620" Width="640"
         Background="#1C1C1E"
